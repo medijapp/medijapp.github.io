@@ -24,20 +24,20 @@
   }
   function clearLocal() { var del = []; for (var i = 0; i < ls.length; i++) { var k = ls.key(i); if (isApp(k)) del.push(k); } del.forEach(function (k) { rawDel.call(ls, k); }); }
 
-  var sb = null, user = null, timer = null, state = "local", lastErr = "";
+  var sb = null, user = null, timer = null, state = "local", lastErr = "", allowed = false;
   var cloud = window.__MEDIJ_CLOUD = { state: function () { return state; }, user: function () { return user; } };
 
   /* toute écriture de l'appli marque les données « à envoyer » */
   function touched(k) {
     if (!isApp(k)) return;
     var m = meta(); m.dirty = true; m.localAt = Date.now(); setMeta(m);
-    if (user) { clearTimeout(timer); timer = setTimeout(push, 2500); setState("pending"); }
+    if (user && allowed) { clearTimeout(timer); timer = setTimeout(push, 2500); setState("pending"); }
   }
   Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === ls) touched(k); };
   Storage.prototype.removeItem = function (k) { rawDel.call(this, k); if (this === ls) touched(k); };
 
   async function push() {
-    if (!sb || !user) return;
+    if (!sb || !user || !allowed) return;
     var m = meta();
     try {
       setState("saving");
@@ -92,7 +92,7 @@
     document.body.appendChild(p); setState(state);
   }
   function close() { var o = document.getElementById("mjc-o"); if (o) o.remove(); }
-  function box(inner) { close(); var o = el('<div id="mjc-o"><div id="mjc-b">' + inner + "</div></div>"); document.body.appendChild(o); return o; }
+  function box(inner) { close(); var o = el('<div id="mjc-o"><div id="mjc-b">' + inner + "</div></div>"); o.style.background = "rgba(16,36,58,.88)"; document.body.appendChild(o); return o; }
   function msg(o, t, e) { var m = o.querySelector(".mjc-m"); if (!m) { m = el('<div class="mjc-m"></div>'); o.querySelector("#mjc-b").appendChild(m); } m.className = "mjc-m" + (e ? " e" : ""); m.textContent = t; }
   var FR = function (e) {
     var t = (e && e.message) || String(e || "");
@@ -114,9 +114,8 @@
       '<button class="mjc-p" id="mjc-go">' + (up ? "Créer mon compte" : "Me connecter") + "</button>" +
       '<button class="mjc-l" id="mjc-sw">' + (up ? "J'ai déjà un compte" : "Je n'ai pas encore de compte") + "</button>" +
       (up ? "" : '<button class="mjc-l" id="mjc-fg">Mot de passe oublié</button>') +
-      '<button class="mjc-s" id="mjc-loc">Continuer sans compte (sur cet appareil seulement)</button>');
+      '<p style="font-size:.8rem">🔒 MédiJ est sur invitation : après ton inscription, ton compte doit être validé avant de pouvoir l\'utiliser.</p>');
     o.querySelector("#mjc-sw").onclick = function () { authBox(up ? "in" : "up"); };
-    o.querySelector("#mjc-loc").onclick = function () { try { rawSet.call(ls, LOCALONLY, "1"); } catch (e) {} close(); setState("local"); };
     var fg = o.querySelector("#mjc-fg");
     if (fg) fg.onclick = async function () {
       var e = o.querySelector("#mjc-e").value.trim(); if (!e) return msg(o, "Écris d'abord ton e-mail.", true);
@@ -132,8 +131,7 @@
       this.disabled = false;
       if (r.error) return msg(o, FR(r.error), true);
       if (up && !r.data.session) return msg(o, "Compte créé ! Ouvre le lien reçu par e-mail pour confirmer ton adresse (regarde aussi dans les spams), puis reviens te connecter.");
-      try { rawDel.call(ls, LOCALONLY); } catch (x) {}
-      close();
+      msg(o, "Vérification de ton accès…");
     };
   }
   function accountBox() {
@@ -148,6 +146,21 @@
     };
     o.querySelector("#mjc-x").onclick = close;
   }
+  function gateBox(statut) {
+    var refuse = statut === "refuse";
+    var o = box(refuse ? "<h2>Accès refusé</h2><p>Ton compte <strong>" + (user.email || "") + "</strong> n'a pas été accepté pour MédiJ.</p>"
+      : "<h2>⏳ En attente de validation</h2><p>Ton compte <strong>" + (user.email || "") + "</strong> est bien créé 🎉</p><p>MédiJ est sur invitation : <strong>Mariame doit valider ton compte</strong>. Dès que c'est fait, reviens ici et appuie sur « Vérifier ».</p>" +
+        '<button class="mjc-p" id="mjc-chk">Vérifier</button>');
+    o.querySelector("#mjc-b").insertAdjacentHTML("beforeend", '<button class="mjc-s" id="mjc-out">Me déconnecter</button>');
+    o.style.background = "rgba(16,36,58,.92)";
+    var chk = o.querySelector("#mjc-chk");
+    if (chk) chk.onclick = async function () { this.disabled = true; var st2 = await access(); if (st2 === "accepte") location.reload(); else { this.disabled = false; msg(o, "Pas encore validé. Réessaie un peu plus tard."); } };
+    o.querySelector("#mjc-out").onclick = async function () { await sb.auth.signOut(); clearLocal(); setMeta({}); location.reload(); };
+  }
+  async function access() {
+    try { var r = await sb.from("medij_access").select("statut").eq("user_id", user.id).maybeSingle(); if (r.error) throw r.error; return r.data ? r.data.statut : "en_attente"; }
+    catch (e) { lastErr = (e && e.message) || ""; return "erreur"; }
+  }
   function passwordBox() {
     var o = box('<h2>Nouveau mot de passe</h2><input id="mjc-w" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe"><button class="mjc-p" id="mjc-go">Enregistrer</button>');
     o.querySelector("#mjc-go").onclick = async function () { var r = await sb.auth.updateUser({ password: o.querySelector("#mjc-w").value }); if (r.error) msg(o, FR(r.error), true); else close(); };
@@ -160,8 +173,12 @@
   var started = false;
   async function onUser(u) {
     user = u; pillWhenReady();
-    if (!u) { setState(ls.getItem(LOCALONLY) ? "local" : "off"); return; }
+    if (!u) { setState("off"); return; }
     if (started) return; started = true;
+    var statut = await access();
+    if (statut === "erreur") { setState("error"); close(); return; } /* hors ligne : on laisse utiliser ce qui est sur l'appareil */
+    if (statut !== "accepte") { allowed = false; setState("off"); gateBox(statut); return; }
+    allowed = true; close();
     try {
       var changed = await pull();
       if (changed) { var k = "medijsync-reload"; if (!sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); location.reload(); return; } }
@@ -177,7 +194,7 @@
   cloud.ready = sb.auth.getSession().then(function (r) {
     var s = r.data && r.data.session;
     onUser(s ? s.user : null);
-    if (!s && !ls.getItem(LOCALONLY)) {
+    if (!s) {
       var show = function () { setTimeout(function () { authBox(); }, 400); };
       if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", show); else show();
     }
