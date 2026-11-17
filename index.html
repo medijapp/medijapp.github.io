@@ -18,7 +18,7 @@
 <script src="data.js"></script>
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
-<script>window.__BUILD="20261117145000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261117151500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1387,12 +1387,16 @@ function jPanel(d,compact){
   ${compact?"":d.learnedOn?`<div class="row" style="gap:8px"><label class="help" style="display:flex;gap:6px;align-items:center">J0 (appris le)<input type="date" data-jdate="${d.id}" value="${esc(d.learnedOn)}" style="width:auto;padding:6px 8px"></label>${info.finished?`<span class="pill ok">Cycle terminé</span>`:info.next?`<span class="help">Prochain : <strong>J${info.next}</strong> le ${fmtDate(info.date)}</span>`:""}</div><p class="help">Touche un J pour le cocher ou le décocher.</p>`:`<p class="help">Touche <strong>J0</strong> le jour où tu apprends le cours : les J1, J3, J7, J15 et J30 se calculent à partir de là.</p>`}`;
 }
 
+const FILIERES=["Médecine","Pharmacie","Odontologie (chirurgie dentaire)","Sciences infirmières","Sage-femme","Kinésithérapie","Autre filière de santé"];
+function filiere(){try{return localStorage.getItem("medij-filiere")||""}catch(e){return ""}}
+const filOpts=v=>FILIERES.map(f=>`<option${f===v?" selected":""}>${f}</option>`).join("");
 function prenom(){try{const v=localStorage.getItem("medij-prenom");if(v!=null)return v}catch(e){}return ""}
 function onboard(){const o=$("#overlay");if(!o)return;
   o.innerHTML=`<div class="sheet"><div class="box"><h3>Bienvenue sur MédiJ 🩺</h3>
   <p class="help">Ajoute tes propres cours (PDF, PowerPoint, Word ou photos) : MédiJ les transforme en fiches, flashcards et QCM, puis te dit chaque jour quoi réviser grâce à la méthode des J (J1, J3, J7, J15, J30).</p>
   <p class="help">Ta progression et ton planning restent à toi, enregistrés sur cet appareil.</p>
   <label class="f">Ton prénom<input type="text" id="ob-name" autocomplete="given-name" placeholder="ex. Awa"></label>
+  <label class="f">Ta filière<select id="ob-fil"><option value="">Choisis…</option>${filOpts(filiere())}</select></label>
   <label class="f">Ton année d'études<select id="ob-year"><option value="">Choisis…</option>${[1,2,3,4,5,6,7].map(y=>`<option value="${y}">${y===1?"1re":y+"e"} année (${y<=3?"L"+y:y<=5?"M"+(y-3):"D"+(y-5)})</option>`).join("")}</select></label>
   <label class="f">Ton semestre<select id="ob-sem"><option value="1">1er semestre de l'année</option><option value="2">2e semestre de l'année</option></select></label>
   <button class="btn" data-act="obgo">C'est parti</button></div></div>`}
@@ -2110,7 +2114,7 @@ function planRules(){
   return `<div class="section"><h2>Méthode de révision</h2><button class="mini" data-act="nav" data-v="methode"><span><strong>📊 Méthode Major</strong><br><span class="muted">Durées calculées selon le nombre de cours et de diapos de chaque jour</span></span><span class="pill">Voir</span></button></div>
   ${calRules()}
   <div class="section"><h2>Apparence</h2><div class="panel stack"><div class="chips">${[["light","☀️ Clair"],["dark","🌙 Sombre"],["auto","Comme mon téléphone"]].map(([k,l])=>`<button class="chip" data-act="themeset" data-t="${k}" aria-pressed="${themePref()===k}">${l}</button>`).join("")}</div></div></div>
-  <div class="section"><h2>Profil</h2><div class="panel stack"><label class="f">Ton prénom<input type="text" id="pf-name" value="${esc(prenom())}" autocomplete="given-name"></label><button class="btn soft small" data-act="namesave" style="align-self:flex-start">Enregistrer</button><p class="help">${window.__STATIC?"Ta progression, tes coches et ton planning restent sur ton appareil : chaque personne qui utilise le lien a son propre suivi.":"Affiché sur l'accueil."}</p></div></div>
+  <div class="section"><h2>Profil</h2><div class="panel stack"><label class="f">Ton prénom<input type="text" id="pf-name" value="${esc(prenom())}" autocomplete="given-name"></label><label class="f">Ta filière<select id="pf-fil"><option value="">Choisis…</option>${filOpts(filiere())}</select></label><button class="btn soft small" data-act="namesave" style="align-self:flex-start">Enregistrer</button><p class="help">${window.__STATIC?"Ta progression, tes coches et ton planning restent sur ton appareil : chaque personne qui utilise le lien a son propre suivi.":"Affiché sur l'accueil."}</p></div></div>
   <div class="section"><h2>Semestre</h2><div class="panel stack"><label class="f">Lundi de la semaine 1<input type="date" id="sem-start" value="${esc(P.semStart||"")}"></label><button class="btn soft small" data-act="semsave" style="align-self:flex-start">Enregistrer</button><p class="help">Sert à numéroter tes semaines (Semaine 1, 2, 3…) dans l'accueil et le planning.</p></div></div>
   <div class="section"><h2>Habitudes</h2>${(P.habits||[]).map(x=>row(x,"habits")).join("")||`<p class="help">Sommeil, repas, prière, sport, trajet… tout ce qui revient chaque semaine.</p>`}${itemForm("habits")}</div>
   <div class="section"><h2>Obligations</h2>${(P.obligations||[]).map(x=>row(x,"obligations")).join("")||`<p class="help">Rendez-vous et engagements ponctuels.</p>`}${itemForm("obligations")}</div>
@@ -2304,7 +2308,7 @@ function aiSetupBox(){
   const g=k=>{try{return localStorage.getItem(k)||""}catch(e){return ""}};
   const gk=g("medij-ai-key"),ck=g("medij-claude-key"),pv=g("medij-ai-provider")||(ck&&!gk?"claude":"gemini");
   const active=aiOK();
-  return `<details class="item" style="margin-bottom:12px" ${active?"":"open"}><summary>${active?`IA active : ${pv==="claude"?"Claude":"Gemini"} · changer`:"Activer l'IA sur ce site"}</summary><div class="stack">
+  return `<details class="item" style="margin-bottom:12px" ${active?"":"open"}><summary>${active?(!gk&&!ck?"✅ IA MédiJ incluse · utiliser ma propre clé (facultatif)":`IA active : ${pv==="claude"?"Claude":"Gemini"} · changer`):"Activer l'IA sur ce site"}</summary><div class="stack">
     <p class="help">L'assistant, « Explique-moi », les astuces, la lecture des scans et le planning en langage naturel ont besoin d'une IA. Choisis-en une et colle ta clé personnelle.</p>
     <div class="chips"><button class="chip" data-act="aiprov" data-p="gemini" aria-pressed="${pv==="gemini"}">Gemini · gratuit</button><button class="chip" data-act="aiprov" data-p="claude" aria-pressed="${pv==="claude"}">Claude · payant</button></div>
     ${pv==="claude"?`<ol class="help" style="padding-left:18px;margin:0"><li>Va sur <strong>console.anthropic.com</strong> et crée un compte (différent de ton abonnement Claude).</li><li>Ajoute un moyen de paiement et un peu de crédit (Billing).</li><li>Dans « API keys », crée une clé et copie-la.</li></ol>
@@ -3343,10 +3347,10 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("[data-act]");if(!b)return;
   const a=b.dataset.act,d=getDeck(S.deckId);
   switch(a){
-    case "namesave":{const v=$("#pf-name").value.trim();try{localStorage.setItem("medij-prenom",v)}catch(e){}toast(v?"Bonjour "+v+" !":"Prénom retiré");render();break}
-    case "obgo":{const v=$("#ob-name").value.trim();if(!v){toast("Écris ton prénom");break}const yr=+($("#ob-year")?.value||0);if(!yr){toast("Choisis ton année d'études");break}
+    case "namesave":{const v=$("#pf-name").value.trim();try{localStorage.setItem("medij-prenom",v);const f=$("#pf-fil")?.value;if(f)localStorage.setItem("medij-filiere",f)}catch(e){}toast(v?"Bonjour "+v+" !":"Prénom retiré");render();break}
+    case "obgo":{const v=$("#ob-name").value.trim();if(!v){toast("Écris ton prénom");break}const yr=+($("#ob-year")?.value||0);const fil=$("#ob-fil")?.value||"";if(!fil){toast("Choisis ta filière");break}if(!yr){toast("Choisis ton année d'études");break}
       const sm=(yr-1)*2+(+($("#ob-sem")?.value||1)),per=(yr<=3?"L"+yr:yr<=5?"M"+(yr-3):"D"+(yr-5))+" · S"+sm;
-      try{localStorage.setItem("medij-prenom",v);localStorage.setItem("medij-per",per)}catch(e){}
+      try{localStorage.setItem("medij-prenom",v);localStorage.setItem("medij-per",per);localStorage.setItem("medij-filiere",fil)}catch(e){}
       const o={};["edt","prieres","coran","batch"].forEach(k=>o[k]=!!$("#ob-"+k)?.checked);o.perso=!!$("#ob-perso")?.checked;
       window.__seedPlanning&&window.__seedPlanning(o);location.reload();break}
     case "simple":if(d)doSimple(d);break;

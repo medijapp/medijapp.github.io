@@ -172,6 +172,7 @@
   /* ---------- démarrage ---------- */
   if (!window.supabase || !window.supabase.createClient) { cloud.ready = Promise.resolve(); return; }
   sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  cloud.sb = sb; cloud.url = SB_URL; cloud.key = SB_KEY; cloud.allowed = function () { return allowed; };
   cloud.client = sb;
   var started = false;
   async function onUser(u) {

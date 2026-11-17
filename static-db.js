@@ -66,6 +66,7 @@
   window.__STATIC=true;
   let AIKEY="",CKEY="",PROV="gemini";try{AIKEY=(localStorage.getItem("medij-ai-key")||"").replace(/[\s\u200b-\u200d\ufeff"'«»]/g,"");CKEY=(localStorage.getItem("medij-claude-key")||"").replace(/[\s\u200b-\u200d\ufeff"'«»]/g,"");PROV=localStorage.getItem("medij-ai-provider")||(CKEY&&!AIKEY?"claude":"gemini")}catch(e){}
   if(PROV==="claude"&&!CKEY)PROV="gemini";if(PROV==="gemini"&&!AIKEY&&CKEY)PROV="claude";
+  const CLOUD=window.__MEDIJ_CLOUD;if(!AIKEY&&!CKEY&&CLOUD&&CLOUD.sb)PROV="central";
   const MODELS=["gemini-flash-latest","gemini-3.8-flash","gemini-3.6-flash","gemini-2.5-flash"];let MI=0;
   try{const m=localStorage.getItem("medij-ai-model");if(m)MODELS.unshift(m)}catch(e){}
   const b64=blob=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=ko;r.readAsDataURL(blob)});
@@ -80,11 +81,14 @@
     const body={contents,generationConfig:{maxOutputTokens:32768,temperature:.4,...(json?{responseMimeType:"application/json"}:{})}};
     let tries=0;const sleep=ms=>new Promise(ok=>setTimeout(ok,ms));
     for(;;){
-      let r;try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELS[MI]}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":AIKEY},body:JSON.stringify(body),signal:opts.signal})}
-      catch(e){if(opts.signal?.aborted)throw err("cancelled","stop");throw err("upstream_error","Connexion à Gemini impossible : vérifie ta connexion internet.")}
+      let r;try{if(PROV==="central"){const ss=(await CLOUD.sb.auth.getSession()).data.session;if(!ss)throw err("not_granted","Connecte-toi à ton compte MédiJ pour utiliser l'IA.");
+          r=await fetch(CLOUD.url+"/functions/v1/medij-ia",{method:"POST",headers:{"Content-Type":"application/json",apikey:CLOUD.key,Authorization:"Bearer "+ss.access_token},body:JSON.stringify({model:MODELS[MI],body}),signal:opts.signal})}
+        else r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELS[MI]}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":AIKEY},body:JSON.stringify(body),signal:opts.signal})}
+      catch(e){if(opts.signal?.aborted)throw err("cancelled","stop");if(e&&e.code)throw e;throw err("upstream_error","Connexion à l'IA impossible : vérifie ta connexion internet.")}
       if(r.status===404&&MI<MODELS.length-1){MI++;continue}
       const j=await r.json().catch(()=>({}));
       if(!r.ok){const m=j?.error?.message||("Erreur "+r.status);
+        if(PROV==="central"&&j?.error?.medij)throw err(r.status===429?"rate_limited":"not_granted",m);
         if([429,500,502,503,504].includes(r.status)&&tries<MODELS.length*2-1){tries++;MI=(MI+1)%MODELS.length;await sleep(Math.min(6000,1200*tries));if(opts.signal?.aborted)throw err("cancelled","stop");continue}
         if(r.status===429)throw err("rate_limited","Limite gratuite de Gemini atteinte pour le moment. Réessaie dans quelques minutes (ou demain si la limite du jour est atteinte).");
         if(r.status>=500)throw err("upstream_error","Gemini est surchargé en ce moment (forte demande). Réessaie dans quelques minutes.");
@@ -118,9 +122,12 @@
     if(!text)throw err("empty_completion","Réponse vide");
     return {text,truncated:j.stop_reason==="max_tokens"};
   }
-  const call=(i,o,j)=>PROV==="claude"?cla(i,o,j):gem(i,o,j);
+  const ctx=input=>{let f="",p="";try{f=localStorage.getItem("medij-filiere")||"";p=localStorage.getItem("medij-per")||""}catch(e){}
+    if(!f)return input;const pre=`[Contexte : l'utilisateur est étudiant(e) en ${f}${p?", "+p:""}. Si ce n'est pas la médecine, adapte le niveau, le vocabulaire et les exemples à cette filière.]\n\n`;
+    if(typeof input==="string")return pre+input;const t=input.map(x=>({...x}));const i=t.findIndex(x=>x.role!=="assistant");if(i>=0)t[i].content=pre+String(t[i].content);return t};
+  const call=(i,o,j)=>PROV==="claude"?cla(ctx(i),o,j):gem(ctx(i),o,j);
   let sampleFn=null;
-  if(PROV==="claude"?CKEY:AIKEY){
+  if(PROV==="central"||(PROV==="claude"?CKEY:AIKEY)){
     sampleFn=async(input,opts={})=>{const r=await call(input,opts,false);opts.onText&&opts.onText({text:r.text,delta:r.text});return {text:r.text,truncated:r.truncated,modelTierApplied:"default"}};
     sampleFn.json=async(input,opts={})=>{const r=await call(input,opts,true);let t=r.text.trim();
       try{return JSON.parse(t)}catch(e){}const f=t.match(/```(?:json)?\s*([\s\S]*?)```/);if(f){try{return JSON.parse(f[1])}catch(e){}}
