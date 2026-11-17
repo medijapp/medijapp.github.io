@@ -114,7 +114,7 @@
       '<button class="mjc-p" id="mjc-go">' + (up ? "Créer mon compte" : "Me connecter") + "</button>" +
       '<button class="mjc-l" id="mjc-sw">' + (up ? "J'ai déjà un compte" : "Je n'ai pas encore de compte") + "</button>" +
       (up ? "" : '<button class="mjc-l" id="mjc-fg">Mot de passe oublié</button>') +
-      '<p style="font-size:.8rem">🔒 MédiJ est sur invitation : après ton inscription, ton compte doit être validé avant de pouvoir l\'utiliser.</p>');
+      '<p style="font-size:.8rem">🔒 Accès à MédiJ : 2 000 F par semestre (Wave ou Orange Money). Ton compte est activé après validation du paiement.</p>');
     o.querySelector("#mjc-sw").onclick = function () { authBox(up ? "in" : "up"); };
     var fg = o.querySelector("#mjc-fg");
     if (fg) fg.onclick = async function () {
@@ -149,7 +149,10 @@
   function gateBox(statut) {
     var refuse = statut === "refuse";
     var o = box(refuse ? "<h2>Accès refusé</h2><p>Ton compte <strong>" + (user.email || "") + "</strong> n'a pas été accepté pour MédiJ.</p>"
-      : "<h2>⏳ En attente de validation</h2><p>Ton compte <strong>" + (user.email || "") + "</strong> est bien créé 🎉</p><p>MédiJ est sur invitation : <strong>Mariame doit valider ton compte</strong>. Dès que c'est fait, reviens ici et appuie sur « Vérifier ».</p>" +
+      : "<h2>⏳ Dernière étape : ton accès</h2><p>Ton compte <strong>" + (user.email || "") + "</strong> est bien créé 🎉</p>" +
+        "<p>L'accès à MédiJ coûte <strong>2 000 F par semestre</strong> (prix de lancement).</p>" +
+        "<p>1. Envoie <strong>2 000 F</strong> par <strong>Wave</strong> ou <strong>Orange Money</strong> au <strong>78 171 88 76</strong> (Mariame MOUIGNI).<br>2. Préviens Mariame sur WhatsApp avec ton e-mail.<br>3. Dès que ton compte est validé, appuie sur « Vérifier ».</p>" +
+        '<a class="mjc-p" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/221781718876?text=' + encodeURIComponent("Bonjour Mariame, j'ai payé les 2 000 F pour MédiJ. Mon e-mail : " + (user.email || "")) + '">💬 Prévenir Mariame sur WhatsApp</a>' +
         '<button class="mjc-p" id="mjc-chk">Vérifier</button>');
     o.querySelector("#mjc-b").insertAdjacentHTML("beforeend", '<button class="mjc-s" id="mjc-out">Me déconnecter</button>');
     o.style.background = "rgba(16,36,58,.92)";
