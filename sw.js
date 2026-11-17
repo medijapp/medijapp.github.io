@@ -1,4 +1,4 @@
-const V="medij-20261117144800";
+const V="medij-20261117145000";
 const CORE=["./","index.html","data.js","static-db.js","medij-cloud.js","medij-defi.js","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png"];
 const IMGS=[];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE).then(()=>c.addAll(IMGS).catch(()=>{}))).then(()=>self.skipWaiting()))});
