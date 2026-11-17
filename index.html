@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261117201500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261117210500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1393,6 +1393,14 @@ const FILIERES=["Médecine","Pharmacie","Odontologie (chirurgie dentaire)","Biol
 const FIL_MED=["Médecine","Odontologie (chirurgie dentaire)","Sage-femme"],FIL_CAS=[...FIL_MED,"Sciences infirmières","Kinésithérapie","Pharmacie"];
 function filMed(){const f=filiere();return !f||FIL_MED.includes(f)}
 function filCas(){const f=filiere();return !f||FIL_CAS.includes(f)}
+/* MédiJ Pro : l'assistant « Demander », les cas cliniques et plus d'IA par jour */
+function isPro(){const c=window.__MEDIJ_CLOUD;return !c||!c.pro||c.pro()}
+function proWall(titre){const c=window.__MEDIJ_CLOUD;return `${topbar(titre,true)}<div class="panel stack" style="text-align:center;gap:12px"><div style="font-size:2.6rem">⭐</div><h2 style="margin:0">Réservé à MédiJ Pro</h2>
+<p style="margin:0">Avec <strong>MédiJ Pro</strong>, tu as en plus :</p>
+<ul style="text-align:left;margin:0;line-height:1.7"><li>💬 <strong>L'assistant « Demander »</strong> : pose toutes tes questions sur tes cours</li><li>🧑‍⚕️ <strong>Les cas cliniques et le patient imaginaire</strong> (filières concernées)</li><li>⚡ <strong>3 fois plus d'IA par jour</strong> (120 demandes au lieu de 40)</li></ul>
+<p style="margin:0"><strong>8 000 F par semestre</strong>. Tu as déjà payé l'accès simple ce semestre ? Envoie seulement la différence : <strong>6 000 F</strong>.</p>
+<p style="margin:0">Wave ou Orange Money au <strong>78 171 88 76</strong> (Mariame MOUIGNI). 🇫🇷 Depuis la France : <strong>13 €</strong> avec Taptap Send ou LemFi vers ce même numéro.</p>
+${c&&c.waBtn?c.waBtn("Bonjour Mariame, je veux passer à MédiJ Pro."):""}</div>`}
 function filiere(){try{return localStorage.getItem("medij-filiere")||""}catch(e){return ""}}
 const filOpts=v=>FILIERES.map(f=>`<option${f===v?" selected":""}>${f}</option>`).join("");
 function prenom(){try{const v=localStorage.getItem("medij-prenom");if(v!=null)return v}catch(e){}return ""}
@@ -2271,7 +2279,7 @@ function passagesFor(q){
     out.push({deckId:e.deckId,tab:e.tab,anchor:e.anchor,label,text:text.slice(0,2500)});if(out.length>=18)break}
   return out;
 }
-function viewAssist(){
+function viewAssist(){ if(!isPro())return proWall("Assistant MédiJ");
   const c=X.chat,mats=Object.keys(groupsByMat()),decks=c.mat?S.decks.filter(d=>(d.matiere||"Sans matière")===c.mat):[];
   const scope=c.deck?(getDeck(c.deck)?.name||""):c.mat||"tous tes cours";
   const sugg=c.deck?["Résume ce chapitre en 10 points clés","Explique-moi la partie la plus difficile simplement","Fais-moi un quiz de 5 questions","Quels pièges tombent souvent à l'examen ?"]:["Quelles sont les causes d'ictère cholestatique ?","Compare foie cardiaque et foie de cirrhose","Fais-moi un quiz de 5 questions","Explique l'hypertension portale simplement"];
@@ -2979,7 +2987,7 @@ function tuSafeSvg(x){x=String(x||"");if(x[0]==="@")x=(typeof TU_SVG!=="undefine
 
 /* ---------- Cas cliniques : tous les cas des cours vus, réunis au même endroit (d.cas) ---------- */
 function casDecks(){return S.decks.filter(d=>(d.cas||[]).length)}
-function viewCas(){
+function viewCas(){ if(!isPro())return proWall("Cas cliniques");
   const D=casDecks(),mats=[...new Set(D.map(d=>d.matiere||"Autre"))],m=X.casMat||"";
   const open=X.casOpen;if(open){const d=getDeck(open.d);const c=d&&(d.cas||[]).find(x=>x.id===open.c);if(c)return casPlay(d,c)}
   const list=D.filter(d=>!m||(d.matiere||"Autre")===m);const done=d=>d.casDone||{};
@@ -3281,7 +3289,7 @@ function tabTrain(d){
   const sec=X.trSec||"",S=d.signes||[],GG=d.grilles||(d.grille?[d.grille]:[]),G=GG.length?GG[Math.min(X.trG||0,GG.length-1)]:null,T=ficheTables(d),N=ficheNums(d),ok=d.memoOk||{};
   const semio=/s[ée]miolog/i.test(d.matiere||"");
   const LX=d.lexique||[];
-  const tabs=[["lex","📖 Lexique"],semio&&filMed()&&["hdm","🩺 Histoire de la maladie"],S.length&&filMed()&&["signes","🔍 Signes et mécanismes"],S.length&&filMed()&&["devine","🎯 Je suis un signe"],G&&filMed()&&["grille",GG.length>1?"📋 Grilles SITECHIA ("+GG.length+")":"📋 Grille"],T.length&&["tab",(d.comparatifs||[]).length?"📊 Tableaux comparatifs":"🗂️ Tableaux cachés"],N.length&&["num","🔢 Chiffres clés"],filCas()&&["cas","🧑‍⚕️ Patient imaginaire"]].filter(Boolean);
+  const tabs=[["lex","📖 Lexique"],semio&&filMed()&&["hdm","🩺 Histoire de la maladie"],S.length&&filMed()&&["signes","🔍 Signes et mécanismes"],S.length&&filMed()&&["devine","🎯 Je suis un signe"],G&&filMed()&&["grille",GG.length>1?"📋 Grilles SITECHIA ("+GG.length+")":"📋 Grille"],T.length&&["tab",(d.comparatifs||[]).length?"📊 Tableaux comparatifs":"🗂️ Tableaux cachés"],N.length&&["num","🔢 Chiffres clés"],filCas()&&isPro()&&["cas","🧑‍⚕️ Patient imaginaire"]].filter(Boolean);
   const cur=tabs.some(t=>t[0]===sec)?sec:tabs[0][0];
   let body="";
   if(cur==="lex"){const hide=!!X.trHideL,busy=X.ai["lex-"+d.id];

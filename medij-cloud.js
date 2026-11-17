@@ -138,7 +138,7 @@
   function accountBox() {
     var o = box("<h2>Mon compte</h2><p>Connectée avec <strong>" + (user.email || "") + "</strong>.</p>" +
       "<p>" + (state === "error" ? "⚠️ La dernière synchronisation a échoué (" + lastErr + "). Tes changements sont gardés sur cet appareil et seront envoyés au retour d'internet." : "☁️ Tes cours et ta progression sont sauvegardés dans ton compte.") + "</p>" +
-      (!isAdmin() ? "<p>📅 " + (expireLe ? "Abonnement valable jusqu'au <strong>" + frDate(expireLe) + "</strong>" + (joursRestants(expireLe) <= 7 ? " ⚠️ (bientôt fini : pense à renouveler)" : "") : "Abonnement actif") + "</p>" : "") +
+      (!isAdmin() ? "<p>" + (isPro ? "⭐ Formule <strong>MédiJ Pro</strong>" : "Formule : accès simple") + "</p><p>📅 " + (expireLe ? "Abonnement valable jusqu'au <strong>" + frDate(expireLe) + "</strong>" + (joursRestants(expireLe) <= 7 ? " ⚠️ (bientôt fini : pense à renouveler)" : "") : "Abonnement actif") + "</p>" : "") +
       (isAdmin() ? '<button class="mjc-p" id="mjc-adm2">👑 Validation des comptes</button>' : "") +
       '<button class="mjc-p" id="mjc-now">Synchroniser maintenant</button>' +
       '<button class="mjc-s" id="mjc-out">Me déconnecter</button><button class="mjc-l" id="mjc-x">Fermer</button>');
@@ -166,14 +166,14 @@
     o.querySelector("#mjc-out").onclick = async function () { await sb.auth.signOut(); clearLocal(); setMeta({}); location.reload(); };
   }
   async function access() {
-    try { var r = await sb.from("medij_access").select("statut,expire_le").eq("user_id", user.id).maybeSingle(); if (r.error) throw r.error;
-      if (!r.data) return "en_attente"; expireLe = r.data.expire_le || null;
+    try { var r = await sb.from("medij_access").select("statut,expire_le,pro").eq("user_id", user.id).maybeSingle(); if (r.error) throw r.error;
+      if (!r.data) return "en_attente"; expireLe = r.data.expire_le || null; isPro = !!r.data.pro;
       if (r.data.statut === "accepte" && expireLe && expireLe < ymdLocal()) return "expire";
       return r.data.statut; }
     catch (e) { lastErr = (e && e.message) || ""; return "erreur"; }
   }
   /* ---------- Abonnement : date de fin ---------- */
-  var expireLe = null;
+  var expireLe = null, isPro = false;
   function ymdLocal(d) { d = d || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function frDate(s) { try { return new Date(s + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return s; } }
   function plusSemestre(from) { var d = new Date((from || ymdLocal()) + "T12:00:00"); d.setMonth(d.getMonth() + 6); return ymdLocal(d); }
@@ -208,7 +208,7 @@
   }
   async function adminBox() {
     var o = box("<h2>👑 Gestion de MédiJ</h2><p>Chargement…</p>");
-    var r = await sb.from("medij_access").select("user_id,email,statut,created_at,expire_le").order("created_at", { ascending: false });
+    var r = await sb.from("medij_access").select("user_id,email,statut,created_at,expire_le,pro").order("created_at", { ascending: false });
     if (r.error) { msg(o, "Erreur : " + r.error.message, true); return; }
     var rows = (r.data || []).filter(function (x) { return x.user_id !== ADMIN; });
     rows.sort(function (a, b) { return (a.statut === "en_attente" ? 0 : 1) - (b.statut === "en_attente" ? 0 : 1); });
@@ -222,7 +222,7 @@
       var A = al.data || [], G = A.filter(function (x) { return x.type === "limite_google"; }), U = A.filter(function (x) { return x.type === "limite_utilisateur"; });
       ia = '<div style="border-radius:14px;padding:10px 12px;text-align:left;background:' + (A.length ? "#fbe7e0" : "#e3f3ea") + ';color:#3a1f2b"><strong>🤖 IA aujourd\'hui : ' + tot + " demande" + (tot > 1 ? "s" : "") + "</strong>" +
         (G.length ? "<br>⚠️ <strong>Limite gratuite de Google atteinte</strong> : l'IA est bloquée pour tout le monde jusqu'à ce que Google remette le compteur à zéro. Pour ne plus être bloquée, active la facturation sur aistudio.google.com." : "") +
-        (U.length ? "<br>⚠️ Limite de 40 demandes atteinte par : " + U.map(function (x) { return esc2(x.email); }).join(", ") + ". Dis-moi si tu veux augmenter cette limite." : "") +
+        (U.length ? "<br>⚠️ Limite du jour atteinte par : " + U.map(function (x) { return esc2(x.email); }).join(", ") + ". Dis-moi si tu veux augmenter cette limite." : "") +
         (A.length ? "" : "<br>✅ Aucune limite atteinte.") + "</div>";
     } catch (e) {}
     var html = "<h2>👑 Gestion de MédiJ</h2>" + ia + "<p>" + (pend ? "<strong>" + pend + " compte" + (pend > 1 ? "s" : "") + " en attente.</strong> Vérifie le paiement sur Wave ou Orange Money avant d'accepter." : "Personne en attente pour l'instant.") + "</p>" +
@@ -232,7 +232,8 @@
         var btn = function (st, t, bg) { return '<button data-u="' + x.user_id + '" data-s="' + st + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:' + bg + ';color:#fff;cursor:pointer">' + t + "</button>"; };
         var exp = "";
         if (x.statut === "accepte") { if (!x.expire_le) exp = "<br>📅 Sans date de fin"; else { var jr = joursRestants(x.expire_le); exp = jr < 0 ? '<br><strong style="color:#b5533f">⌛ Expiré depuis le ' + frDate(x.expire_le) + "</strong>" : "<br>📅 Jusqu'au " + frDate(x.expire_le) + (jr <= 7 ? ' <strong style="color:#b5533f">(' + jr + " j)</strong>" : ""); } }
-        return '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:10px;text-align:left"><div style="font-weight:700;word-break:break-all">' + esc2(x.email) + '</div><div style="font-size:.82rem;opacity:.8">' + LBL[x.statut] + " · inscrit le " + d + exp + '</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">' +
+        return '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:10px;text-align:left"><div style="font-weight:700;word-break:break-all">' + esc2(x.email) + '</div><div style="font-size:.82rem;opacity:.8">' + LBL[x.statut] + (x.pro ? " · ⭐ Pro" : "") + " · inscrit le " + d + exp + '</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">' +
+          (x.statut === "accepte" ? '<button data-pro="' + x.user_id + '" data-v="' + (x.pro ? "0" : "1") + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:' + (x.pro ? "#8a6b78" : "#d4a017") + ';color:#fff;cursor:pointer">' + (x.pro ? "Retirer Pro" : "⭐ Passer Pro") + "</button>" : "") +
           (x.statut === "accepte" ? '<button data-ext="' + x.user_id + '" data-exp="' + (x.expire_le || "") + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:#c2577a;color:#fff;cursor:pointer">➕ 1 semestre</button>' : "") +
           (x.statut !== "accepte" ? btn("accepte", "✅ Accepter", "#3f8a62") : "") +
           (x.statut !== "refuse" ? btn("refuse", "⛔ Refuser", "#b5533f") : "") +
@@ -248,6 +249,14 @@
         var u = await sb.from("medij_access").update(upd).eq("user_id", this.getAttribute("data-u"));
         if (u.error) { msg(o, "Erreur : " + u.error.message, true); this.disabled = false; return; }
         adminBadge(); adminBox();
+      };
+    });
+    o.querySelectorAll("button[data-pro]").forEach(function (b) {
+      b.onclick = async function () {
+        this.disabled = true;
+        var u = await sb.from("medij_access").update({ pro: this.getAttribute("data-v") === "1" }).eq("user_id", this.getAttribute("data-pro"));
+        if (u.error) { msg(o, "Erreur : " + u.error.message, true); this.disabled = false; return; }
+        adminBox();
       };
     });
     o.querySelectorAll("button[data-ext]").forEach(function (b) {
@@ -279,7 +288,7 @@
   /* ---------- démarrage ---------- */
   if (!window.supabase || !window.supabase.createClient) { cloud.ready = Promise.resolve(); return; }
   sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-  cloud.sb = sb; cloud.url = SB_URL; cloud.key = SB_KEY; cloud.allowed = function () { return allowed; }; cloud.expire = function () { return expireLe; };
+  cloud.sb = sb; cloud.url = SB_URL; cloud.key = SB_KEY; cloud.allowed = function () { return allowed; }; cloud.expire = function () { return expireLe; }; cloud.pro = function () { return isPro || isAdmin(); }; cloud.waBtn = function (t) { return waBtn(t); };
   cloud.client = sb;
   var started = false;
   async function onUser(u) {
