@@ -71,6 +71,7 @@
 
   /* ---------- interface ---------- */
   var css = "#mjc-pill{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:10px;z-index:50;border:0;border-radius:999px;padding:5px 10px;font:600 12px system-ui,sans-serif;background:#b4506f;color:#fff;opacity:.88;box-shadow:0 2px 8px rgba(0,0,0,.2)}" +
+    "#mjc-adm{position:fixed;top:calc(40px + env(safe-area-inset-top,0px));right:10px;z-index:50;border:0;border-radius:999px;padding:5px 10px;font:700 12px system-ui,sans-serif;background:#3f8a62;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer}" +
     "#mjc-pill.err{background:#b5533f}#mjc-pill.loc{background:#6b5f66}" +
     "#mjc-o{position:fixed;inset:0;z-index:60;background:rgba(74,26,44,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,sans-serif}" +
     "#mjc-b{background:#fff;color:#1f2430;border-radius:20px;max-width:400px;width:100%;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.25)}" +
@@ -137,8 +138,10 @@
   function accountBox() {
     var o = box("<h2>Mon compte</h2><p>Connectée avec <strong>" + (user.email || "") + "</strong>.</p>" +
       "<p>" + (state === "error" ? "⚠️ La dernière synchronisation a échoué (" + lastErr + "). Tes changements sont gardés sur cet appareil et seront envoyés au retour d'internet." : "☁️ Tes cours et ta progression sont sauvegardés dans ton compte.") + "</p>" +
+      (isAdmin() ? '<button class="mjc-p" id="mjc-adm2">👑 Validation des comptes</button>' : "") +
       '<button class="mjc-p" id="mjc-now">Synchroniser maintenant</button>' +
       '<button class="mjc-s" id="mjc-out">Me déconnecter</button><button class="mjc-l" id="mjc-x">Fermer</button>');
+    var ad = o.querySelector("#mjc-adm2"); if (ad) ad.onclick = adminBox;
     o.querySelector("#mjc-now").onclick = async function () { this.disabled = true; try { var ch = await pull(); if (ch) { location.reload(); return; } await push(); } catch (e) { lastErr = e.message; } close(); };
     o.querySelector("#mjc-out").onclick = async function () {
       if (meta().dirty) await push();
@@ -164,6 +167,48 @@
     try { var r = await sb.from("medij_access").select("statut").eq("user_id", user.id).maybeSingle(); if (r.error) throw r.error; return r.data ? r.data.statut : "en_attente"; }
     catch (e) { lastErr = (e && e.message) || ""; return "erreur"; }
   }
+  /* ---------- Validation des comptes (réservé à Mariame) ---------- */
+  var ADMIN = "3960f8a9-876c-4d1c-bbfc-0578bb80cf5c";
+  function isAdmin() { return !!(user && user.id === ADMIN); }
+  var LBL = { en_attente: "⏳ En attente", accepte: "✅ Accepté", refuse: "⛔ Refusé" };
+  async function adminBadge() {
+    if (!isAdmin() || !sb) return;
+    var n = 0; try { var r = await sb.from("medij_access").select("user_id", { count: "exact", head: true }).eq("statut", "en_attente"); n = r.count || 0; } catch (e) {}
+    var b = document.getElementById("mjc-adm");
+    if (!n) { if (b) b.remove(); return; }
+    if (!b) { b = el('<button id="mjc-adm" type="button"></button>'); b.onclick = adminBox; document.body.appendChild(b); }
+    b.textContent = "👑 " + n + " à valider";
+  }
+  async function adminBox() {
+    var o = box("<h2>👑 Validation des comptes</h2><p>Chargement…</p>");
+    var r = await sb.from("medij_access").select("user_id,email,statut,created_at").order("created_at", { ascending: false });
+    if (r.error) { msg(o, "Erreur : " + r.error.message, true); return; }
+    var rows = (r.data || []).filter(function (x) { return x.user_id !== ADMIN; });
+    rows.sort(function (a, b) { return (a.statut === "en_attente" ? 0 : 1) - (b.statut === "en_attente" ? 0 : 1); });
+    var pend = rows.filter(function (x) { return x.statut === "en_attente"; }).length;
+    var esc2 = function (t) { return String(t || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+    var html = "<h2>👑 Validation des comptes</h2><p>" + (pend ? "<strong>" + pend + " compte" + (pend > 1 ? "s" : "") + " en attente.</strong> Vérifie le paiement sur Wave ou Orange Money avant d'accepter." : "Personne en attente pour l'instant.") + "</p>" +
+      '<div style="display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto">' +
+      (rows.length ? rows.map(function (x) {
+        var d = new Date(x.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+        var btn = function (st, t, bg) { return '<button data-u="' + x.user_id + '" data-s="' + st + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:' + bg + ';color:#fff;cursor:pointer">' + t + "</button>"; };
+        return '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:10px;text-align:left"><div style="font-weight:700;word-break:break-all">' + esc2(x.email) + '</div><div style="font-size:.82rem;opacity:.75">' + LBL[x.statut] + " · inscrit le " + d + '</div><div style="display:flex;gap:6px;margin-top:8px">' +
+          (x.statut !== "accepte" ? btn("accepte", "✅ Accepter", "#3f8a62") : "") +
+          (x.statut !== "refuse" ? btn("refuse", "⛔ Refuser", "#b5533f") : "") +
+          (x.statut !== "en_attente" ? btn("en_attente", "⏳ En attente", "#8a6b78") : "") + "</div></div>";
+      }).join("") : "<p>Aucun autre compte pour l'instant.</p>") + "</div>" +
+      '<button class="mjc-s" id="mjc-ax">Fermer</button>';
+    o.querySelector("#mjc-b").innerHTML = html;
+    o.querySelectorAll("button[data-u]").forEach(function (b) {
+      b.onclick = async function () {
+        this.disabled = true;
+        var u = await sb.from("medij_access").update({ statut: this.getAttribute("data-s") }).eq("user_id", this.getAttribute("data-u"));
+        if (u.error) { msg(o, "Erreur : " + u.error.message, true); this.disabled = false; return; }
+        adminBadge(); adminBox();
+      };
+    });
+    o.querySelector("#mjc-ax").onclick = close;
+  }
   function passwordBox() {
     var o = box('<h2>Nouveau mot de passe</h2><input id="mjc-w" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe"><button class="mjc-p" id="mjc-go">Enregistrer</button>');
     o.querySelector("#mjc-go").onclick = async function () { var r = await sb.auth.updateUser({ password: o.querySelector("#mjc-w").value }); if (r.error) msg(o, FR(r.error), true); else close(); };
@@ -182,7 +227,7 @@
     var statut = await access();
     if (statut === "erreur") { setState("error"); close(); return; } /* hors ligne : on laisse utiliser ce qui est sur l'appareil */
     if (statut !== "accepte") { allowed = false; setState("off"); gateBox(statut); return; }
-    allowed = true; close();
+    allowed = true; close(); if (isAdmin()) { adminBadge(); setInterval(adminBadge, 60000); }
     try {
       var changed = await pull();
       if (changed) { var k = "medijsync-reload"; if (!sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); location.reload(); return; } }
