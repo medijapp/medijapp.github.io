@@ -63,14 +63,18 @@
     home: { t: "Aujourd'hui", d: "Ici, MédiJ te montre <strong>ce que tu dois réviser aujourd'hui</strong> (méthode des J et flashcards à revoir). Le bouton jaune lance ton <strong>défi du jour</strong>." },
     matieres: { t: "Matières", d: "Tous tes chapitres, rangés par matière. Ouvre un chapitre pour voir sa <strong>Fiche</strong>, ses <strong>Flashcards</strong> et ses <strong>QCM</strong>. <strong>+ Chapitre</strong> crée un chapitre vide à remplir toi-même. Pour importer un cours, va plutôt dans <strong>En classe</strong>." },
     classe: { t: "En classe : importer tes cours", d: "C'est ici que tu <strong>importes tes cours</strong> : appuie sur <strong>Importer un support</strong>, choisis ton fichier (PDF, PowerPoint, Word ou photos), indique la matière et le titre, puis appuie sur <strong>Créer la fiche, les flashcards et les QCM</strong>." },
-    plan: { t: "Planning", d: "Ton programme de révision du jour et de la semaine. Pour ajouter tes cours de la fac, ouvre l'onglet <strong>Emploi du temps</strong> juste en dessous." },
-    edt: { t: "Importer ton emploi du temps", d: "Appuie sur <strong>Choisir un fichier</strong> et envoie une <strong>photo, une capture ou le PDF</strong> de ton emploi du temps. MédiJ te montre les cours trouvés : vérifie-les, puis enregistre." },
+    plan: { t: "Planning", d: "Ton programme de révision du jour et de la semaine. Un <strong>imprévu</strong> ? Écris-le dans <strong>Dis-moi ce qui change</strong> (ex. « imprévu demain de 14h à 16h »). Tes cours de la fac : onglet <strong>Emploi du temps</strong>. Tes habitudes : onglet <strong>Habitudes et réglages</strong>." },
+    edt: { t: "Ton emploi du temps", d: "Appuie sur <strong>Choisir un fichier</strong> et envoie une <strong>photo, une capture ou le PDF</strong> de ton emploi du temps. Tu préfères l'écrire ? Tout en bas : <strong>+ Ajouter un cours à la main</strong>." },
+    regles: { t: "Habitudes et imprévus", d: "Ajoute tes <strong>habitudes</strong> (sommeil, prière, sport…) et tes <strong>obligations</strong> (rendez-vous, imprévus avec une date) avec les boutons <strong>+ Ajouter … à la main</strong>. Ton programme de révision s'organise autour." },
     timer: { t: "Chrono", d: "Choisis un chapitre et lance le chronomètre pendant que tu révises. Ton temps de travail est compté dans tes statistiques." }
   };
   var FAQ = [
     ["📥 Comment importer un cours ?", "<strong>En classe</strong> → <strong>Importer un support</strong> → choisis ton fichier → indique la matière et le titre → <strong>Créer la fiche, les flashcards et les QCM</strong>."],
     ["📝 Comment créer une fiche moi-même ?", "<strong>Matières</strong> → <strong>+ Chapitre</strong>, puis dans le chapitre, l'onglet <strong>Modifier</strong> pour écrire ta fiche, ajouter des flashcards ou des QCM."],
     ["🗓️ Comment importer mon emploi du temps ?", "<strong>Planning</strong> → onglet <strong>Emploi du temps</strong> → <strong>Choisir un fichier</strong> (photo, capture ou PDF) → vérifie les cours trouvés → enregistre."],
+    ["✍️ Écrire mon emploi du temps à la main ?", "<strong>Planning</strong> → onglet <strong>Emploi du temps</strong> → tout en bas, <strong>+ Ajouter un cours à la main</strong> : nom du cours, jour, CM/TD/TP, lieu, heure de début et de fin → <strong>Ajouter</strong>."],
+    ["🔁 Ajouter mes habitudes (sommeil, prière, sport…) ?", "<strong>Planning</strong> → onglet <strong>Habitudes et réglages</strong> → partie <strong>Habitudes</strong> → <strong>+ Ajouter une habitude à la main</strong> : nom, jours de la semaine, heures → <strong>Ajouter</strong>."],
+    ["⚡ Ajouter un imprévu ou un rendez-vous ?", "Le plus simple : en haut de <strong>Planning</strong>, dans <strong>Dis-moi ce qui change</strong>, écris par exemple « imprévu demain de 14h à 16h » puis <strong>OK</strong>. À la main : <strong>Habitudes et réglages</strong> → <strong>Obligations</strong> → <strong>+ Ajouter une obligation à la main</strong> (avec la date). Ton programme de révision se recalcule tout seul."],
     ["📅 C'est quoi la méthode des J ?", "Quand tu as appris un chapitre, coche-le comme appris : MédiJ te le fait revoir à <strong>J1, J3, J7, J15 et J30</strong>. Chaque jour, regarde l'onglet <strong>Aujourd'hui</strong>."],
     ["🎯 Comment marche le défi du jour ?", "Sur <strong>Aujourd'hui</strong>, le bouton jaune lance 10 QCM tirés de tes cours. Un défi par jour garde ta série 🔥 et débloque des badges 🏅."],
     ["🎓 Changer de filière ou de semestre ?", "Filière : dans <strong>Profil</strong>. Semestre : en haut de <strong>Matières</strong>, choisis la période (L1 · S1, L2 · S3…)."],
@@ -107,8 +111,8 @@
   };
 
   function current() {
-    var ed = document.querySelector('button[data-act="pltab"][data-t="edt"][aria-selected="true"]');
-    if (ed) return "edt";
+    var pt = document.querySelector('button[data-act="pltab"][aria-selected="true"]');
+    if (pt && (pt.getAttribute("data-t") === "edt" || pt.getAttribute("data-t") === "regles")) return pt.getAttribute("data-t");
     var b = document.querySelector('#tabbar button[aria-current="page"]');
     return b ? b.getAttribute("data-v") : null;
   }
