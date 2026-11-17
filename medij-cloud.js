@@ -138,7 +138,7 @@
   function accountBox() {
     var o = box("<h2>Mon compte</h2><p>Connectée avec <strong>" + (user.email || "") + "</strong>.</p>" +
       "<p>" + (state === "error" ? "⚠️ La dernière synchronisation a échoué (" + lastErr + "). Tes changements sont gardés sur cet appareil et seront envoyés au retour d'internet." : "☁️ Tes cours et ta progression sont sauvegardés dans ton compte.") + "</p>" +
-      (!isAdmin() ? "<p>" + (isPro ? "⭐ Formule <strong>MédiJ Pro</strong>" : "Formule : accès simple") + "</p><p>📅 " + (expireLe ? "Abonnement valable jusqu'au <strong>" + frDate(expireLe) + "</strong>" + (joursRestants(expireLe) <= 7 ? " ⚠️ (bientôt fini : pense à renouveler)" : "") : "Abonnement actif") + "</p>" : "") +
+      (!isAdmin() ? "<p>📅 " + (expireLe ? "Abonnement valable jusqu'au <strong>" + frDate(expireLe) + "</strong>" + (joursRestants(expireLe) <= 7 ? " ⚠️ (bientôt fini : pense à renouveler)" : "") : "Abonnement actif") + "</p>" : "") +
       (isAdmin() ? '<button class="mjc-p" id="mjc-adm2">👑 Validation des comptes</button>' : "") +
       '<button class="mjc-p" id="mjc-now">Synchroniser maintenant</button>' +
       '<button class="mjc-s" id="mjc-out">Me déconnecter</button><button class="mjc-l" id="mjc-x">Fermer</button>');
@@ -173,7 +173,7 @@
     catch (e) { lastErr = (e && e.message) || ""; return "erreur"; }
   }
   /* ---------- Abonnement : date de fin ---------- */
-  var expireLe = null, isPro = false;
+  var expireLe = null, isPro = false, PRO_ACTIF = false; /* MédiJ Pro pas encore lancé */
   function ymdLocal(d) { d = d || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function frDate(s) { try { return new Date(s + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return s; } }
   function plusSemestre(from) { var d = new Date((from || ymdLocal()) + "T12:00:00"); d.setMonth(d.getMonth() + 6); return ymdLocal(d); }
@@ -232,8 +232,8 @@
         var btn = function (st, t, bg) { return '<button data-u="' + x.user_id + '" data-s="' + st + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:' + bg + ';color:#fff;cursor:pointer">' + t + "</button>"; };
         var exp = "";
         if (x.statut === "accepte") { if (!x.expire_le) exp = "<br>📅 Sans date de fin"; else { var jr = joursRestants(x.expire_le); exp = jr < 0 ? '<br><strong style="color:#b5533f">⌛ Expiré depuis le ' + frDate(x.expire_le) + "</strong>" : "<br>📅 Jusqu'au " + frDate(x.expire_le) + (jr <= 7 ? ' <strong style="color:#b5533f">(' + jr + " j)</strong>" : ""); } }
-        return '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:10px;text-align:left"><div style="font-weight:700;word-break:break-all">' + esc2(x.email) + '</div><div style="font-size:.82rem;opacity:.8">' + LBL[x.statut] + (x.pro ? " · ⭐ Pro" : "") + " · inscrit le " + d + exp + '</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">' +
-          (x.statut === "accepte" ? '<button data-pro="' + x.user_id + '" data-v="' + (x.pro ? "0" : "1") + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:' + (x.pro ? "#8a6b78" : "#d4a017") + ';color:#fff;cursor:pointer">' + (x.pro ? "Retirer Pro" : "⭐ Passer Pro") + "</button>" : "") +
+        return '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:10px;text-align:left"><div style="font-weight:700;word-break:break-all">' + esc2(x.email) + '</div><div style="font-size:.82rem;opacity:.8">' + LBL[x.statut] + (PRO_ACTIF && x.pro ? " · ⭐ Pro" : "") + " · inscrit le " + d + exp + '</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">' +
+          (PRO_ACTIF && x.statut === "accepte" ? '<button data-pro="' + x.user_id + '" data-v="' + (x.pro ? "0" : "1") + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:' + (x.pro ? "#8a6b78" : "#d4a017") + ';color:#fff;cursor:pointer">' + (x.pro ? "Retirer Pro" : "⭐ Passer Pro") + "</button>" : "") +
           (x.statut === "accepte" ? '<button data-ext="' + x.user_id + '" data-exp="' + (x.expire_le || "") + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:#c2577a;color:#fff;cursor:pointer">➕ 1 semestre</button>' : "") +
           (x.statut !== "accepte" ? btn("accepte", "✅ Accepter", "#3f8a62") : "") +
           (x.statut !== "refuse" ? btn("refuse", "⛔ Refuser", "#b5533f") : "") +

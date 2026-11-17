@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261117210500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261117211000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1394,7 +1394,8 @@ const FIL_MED=["Médecine","Odontologie (chirurgie dentaire)","Sage-femme"],FIL_
 function filMed(){const f=filiere();return !f||FIL_MED.includes(f)}
 function filCas(){const f=filiere();return !f||FIL_CAS.includes(f)}
 /* MédiJ Pro : l'assistant « Demander », les cas cliniques et plus d'IA par jour */
-function isPro(){const c=window.__MEDIJ_CLOUD;return !c||!c.pro||c.pro()}
+const PRO_ACTIF=false; /* MédiJ Pro pas encore lancé : tout le monde a tout */
+function isPro(){if(!PRO_ACTIF)return true;const c=window.__MEDIJ_CLOUD;return !c||!c.pro||c.pro()}
 function proWall(titre){const c=window.__MEDIJ_CLOUD;return `${topbar(titre,true)}<div class="panel stack" style="text-align:center;gap:12px"><div style="font-size:2.6rem">⭐</div><h2 style="margin:0">Réservé à MédiJ Pro</h2>
 <p style="margin:0">Avec <strong>MédiJ Pro</strong>, tu as en plus :</p>
 <ul style="text-align:left;margin:0;line-height:1.7"><li>💬 <strong>L'assistant « Demander »</strong> : pose toutes tes questions sur tes cours</li><li>🧑‍⚕️ <strong>Les cas cliniques et le patient imaginaire</strong> (filières concernées)</li><li>⚡ <strong>3 fois plus d'IA par jour</strong> (120 demandes au lieu de 40)</li></ul>
