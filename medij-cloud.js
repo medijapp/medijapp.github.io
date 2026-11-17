@@ -173,11 +173,14 @@
   var LBL = { en_attente: "⏳ En attente", accepte: "✅ Accepté", refuse: "⛔ Refusé" };
   async function adminBadge() {
     if (!isAdmin() || !sb) return;
-    var n = 0; try { var r = await sb.from("medij_access").select("user_id", { count: "exact", head: true }).eq("statut", "en_attente"); n = r.count || 0; } catch (e) {}
+    var n = 0, al = 0, today = new Date().toISOString().slice(0, 10);
+    try { var r = await sb.from("medij_access").select("user_id", { count: "exact", head: true }).eq("statut", "en_attente"); n = r.count || 0; } catch (e) {}
+    try { var r2 = await sb.from("medij_ia_alertes").select("id", { count: "exact", head: true }).eq("jour", today); al = r2.count || 0; } catch (e) {}
     var b = document.getElementById("mjc-adm");
-    if (!n) { if (b) b.remove(); return; }
+    if (!n && !al) { if (b) b.remove(); return; }
     if (!b) { b = el('<button id="mjc-adm" type="button"></button>'); b.onclick = adminBox; document.body.appendChild(b); }
-    b.textContent = "👑 " + n + " à valider";
+    b.style.background = al ? "#b5533f" : "#3f8a62";
+    b.textContent = (al ? "⚠️ Limite IA atteinte" : "") + (al && n ? " · " : "") + (n ? "👑 " + n + " à valider" : "");
   }
   async function adminBox() {
     var o = box("<h2>👑 Validation des comptes</h2><p>Chargement…</p>");
@@ -187,7 +190,18 @@
     rows.sort(function (a, b) { return (a.statut === "en_attente" ? 0 : 1) - (b.statut === "en_attente" ? 0 : 1); });
     var pend = rows.filter(function (x) { return x.statut === "en_attente"; }).length;
     var esc2 = function (t) { return String(t || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
-    var html = "<h2>👑 Validation des comptes</h2><p>" + (pend ? "<strong>" + pend + " compte" + (pend > 1 ? "s" : "") + " en attente.</strong> Vérifie le paiement sur Wave ou Orange Money avant d'accepter." : "Personne en attente pour l'instant.") + "</p>" +
+    var today = new Date().toISOString().slice(0, 10), ia = "";
+    try {
+      var us = await sb.from("medij_ia_usage").select("n").eq("jour", today);
+      var tot = (us.data || []).reduce(function (t, x) { return t + (x.n || 0); }, 0);
+      var al = await sb.from("medij_ia_alertes").select("type,email,created_at").eq("jour", today).order("created_at", { ascending: false });
+      var A = al.data || [], G = A.filter(function (x) { return x.type === "limite_google"; }), U = A.filter(function (x) { return x.type === "limite_utilisateur"; });
+      ia = '<div style="border-radius:14px;padding:10px 12px;text-align:left;background:' + (A.length ? "#fbe7e0" : "#e3f3ea") + ';color:#3a1f2b"><strong>🤖 IA aujourd\'hui : ' + tot + " demande" + (tot > 1 ? "s" : "") + "</strong>" +
+        (G.length ? "<br>⚠️ <strong>Limite gratuite de Google atteinte</strong> : l'IA est bloquée pour tout le monde jusqu'à ce que Google remette le compteur à zéro. Pour ne plus être bloquée, active la facturation sur aistudio.google.com." : "") +
+        (U.length ? "<br>⚠️ Limite de 40 demandes atteinte par : " + U.map(function (x) { return esc2(x.email); }).join(", ") + ". Dis-moi si tu veux augmenter cette limite." : "") +
+        (A.length ? "" : "<br>✅ Aucune limite atteinte.") + "</div>";
+    } catch (e) {}
+    var html = "<h2>👑 Validation des comptes</h2>" + ia + "<p>" + (pend ? "<strong>" + pend + " compte" + (pend > 1 ? "s" : "") + " en attente.</strong> Vérifie le paiement sur Wave ou Orange Money avant d'accepter." : "Personne en attente pour l'instant.") + "</p>" +
       '<div style="display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto">' +
       (rows.length ? rows.map(function (x) {
         var d = new Date(x.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
