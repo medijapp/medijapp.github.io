@@ -199,13 +199,14 @@
     try { var r2 = await sb.from("medij_ia_alertes").select("id", { count: "exact", head: true }).eq("jour", today); al = r2.count || 0; } catch (e) {}
     var av = 0; try { var r3 = await sb.from("medij_avis").select("id", { count: "exact", head: true }).eq("lu", false); av = r3.count || 0; } catch (e) {}
     var b = document.getElementById("mjc-adm");
-    if (!n && !al && !av) { if (b) b.remove(); return; }
+
     if (!b) { b = el('<button id="mjc-adm" type="button"></button>'); b.onclick = adminBox; document.body.appendChild(b); }
     b.style.background = al ? "#b5533f" : "#3f8a62";
-    b.textContent = [al ? "⚠️ Limite IA atteinte" : "", n ? "👑 " + n + " à valider" : "", av ? "💬 " + av + " avis" : ""].filter(Boolean).join(" · ");
+    b.textContent = "👑 Gestion" + ([al ? " · ⚠️ Limite IA" : "", n ? " · " + n + " à valider" : "", av ? " · 💬 " + av + " avis" : ""].join(""));
+    if (!al && !n && !av) b.style.background = "#c2577a";
   }
   async function adminBox() {
-    var o = box("<h2>👑 Validation des comptes</h2><p>Chargement…</p>");
+    var o = box("<h2>👑 Gestion de MédiJ</h2><p>Chargement…</p>");
     var r = await sb.from("medij_access").select("user_id,email,statut,created_at,expire_le").order("created_at", { ascending: false });
     if (r.error) { msg(o, "Erreur : " + r.error.message, true); return; }
     var rows = (r.data || []).filter(function (x) { return x.user_id !== ADMIN; });
@@ -223,7 +224,7 @@
         (U.length ? "<br>⚠️ Limite de 40 demandes atteinte par : " + U.map(function (x) { return esc2(x.email); }).join(", ") + ". Dis-moi si tu veux augmenter cette limite." : "") +
         (A.length ? "" : "<br>✅ Aucune limite atteinte.") + "</div>";
     } catch (e) {}
-    var html = "<h2>👑 Validation des comptes</h2>" + ia + "<p>" + (pend ? "<strong>" + pend + " compte" + (pend > 1 ? "s" : "") + " en attente.</strong> Vérifie le paiement sur Wave ou Orange Money avant d'accepter." : "Personne en attente pour l'instant.") + "</p>" +
+    var html = "<h2>👑 Gestion de MédiJ</h2>" + ia + "<p>" + (pend ? "<strong>" + pend + " compte" + (pend > 1 ? "s" : "") + " en attente.</strong> Vérifie le paiement sur Wave ou Orange Money avant d'accepter." : "Personne en attente pour l'instant.") + "</p>" +
       '<div style="display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto">' +
       (rows.length ? rows.map(function (x) {
         var d = new Date(x.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
