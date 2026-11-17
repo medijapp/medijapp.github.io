@@ -1,5 +1,5 @@
-const V="medij-20261117151800";
-const CORE=["./","index.html","data.js","static-db.js","medij-cloud.js","medij-defi.js","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png"];
+const V="medij-20261117154500";
+const CORE=["./","index.html","data.js","static-db.js","medij-cloud.js","medij-defi.js","medij-tuto.js","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png"];
 const IMGS=[];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE).then(()=>c.addAll(IMGS).catch(()=>{}))).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("medij-")&&k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
