@@ -138,6 +138,7 @@
   function accountBox() {
     var o = box("<h2>Mon compte</h2><p>Connectée avec <strong>" + (user.email || "") + "</strong>.</p>" +
       "<p>" + (state === "error" ? "⚠️ La dernière synchronisation a échoué (" + lastErr + "). Tes changements sont gardés sur cet appareil et seront envoyés au retour d'internet." : "☁️ Tes cours et ta progression sont sauvegardés dans ton compte.") + "</p>" +
+      (!isAdmin() ? "<p>📅 " + (expireLe ? "Abonnement valable jusqu'au <strong>" + frDate(expireLe) + "</strong>" + (joursRestants(expireLe) <= 7 ? " ⚠️ (bientôt fini : pense à renouveler)" : "") : "Abonnement actif") + "</p>" : "") +
       (isAdmin() ? '<button class="mjc-p" id="mjc-adm2">👑 Validation des comptes</button>' : "") +
       '<button class="mjc-p" id="mjc-now">Synchroniser maintenant</button>' +
       '<button class="mjc-s" id="mjc-out">Me déconnecter</button><button class="mjc-l" id="mjc-x">Fermer</button>');
@@ -152,6 +153,7 @@
   function gateBox(statut) {
     var refuse = statut === "refuse";
     var o = box(refuse ? "<h2>Accès refusé</h2><p>Ton compte <strong>" + (user.email || "") + "</strong> n'a pas été accepté pour MédiJ.</p>"
+      : statut === "expire" ? "<h2>⌛ Ton abonnement est terminé</h2><p>Ton accès à MédiJ a pris fin le <strong>" + frDate(expireLe) + "</strong>. Tes cours et ta progression sont gardés 🔒</p><p>Pour continuer, renouvelle ton accès : <strong>2 000 F pour un semestre</strong>.</p>" + PAY + waBtn("Bonjour Mariame, je renouvelle mon abonnement MédiJ (2 000 F).") + '<button class="mjc-p" id="mjc-chk">Vérifier</button>'
       : "<h2>⏳ Dernière étape : ton accès</h2><p>Ton compte <strong>" + (user.email || "") + "</strong> est bien créé 🎉</p>" +
         "<p>L'accès à MédiJ coûte <strong>2 000 F par semestre</strong> (prix de lancement).</p>" +
         "<p>1. Envoie <strong>2 000 F</strong> par <strong>Wave</strong> ou <strong>Orange Money</strong> au <strong>78 171 88 76</strong> (Mariame MOUIGNI).<br>2. Préviens Mariame sur WhatsApp avec ton e-mail.<br>3. Dès que ton compte est validé, appuie sur « Vérifier ».</p>" +
@@ -164,9 +166,28 @@
     o.querySelector("#mjc-out").onclick = async function () { await sb.auth.signOut(); clearLocal(); setMeta({}); location.reload(); };
   }
   async function access() {
-    try { var r = await sb.from("medij_access").select("statut").eq("user_id", user.id).maybeSingle(); if (r.error) throw r.error; return r.data ? r.data.statut : "en_attente"; }
+    try { var r = await sb.from("medij_access").select("statut,expire_le").eq("user_id", user.id).maybeSingle(); if (r.error) throw r.error;
+      if (!r.data) return "en_attente"; expireLe = r.data.expire_le || null;
+      if (r.data.statut === "accepte" && expireLe && expireLe < ymdLocal()) return "expire";
+      return r.data.statut; }
     catch (e) { lastErr = (e && e.message) || ""; return "erreur"; }
   }
+  /* ---------- Abonnement : date de fin ---------- */
+  var expireLe = null;
+  function ymdLocal(d) { d = d || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function frDate(s) { try { return new Date(s + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return s; } }
+  function plusSemestre(from) { var d = new Date((from || ymdLocal()) + "T12:00:00"); d.setMonth(d.getMonth() + 6); return ymdLocal(d); }
+  function joursRestants(s) { return Math.round((new Date(s + "T12:00:00") - new Date(ymdLocal() + "T12:00:00")) / 864e5); }
+  var PAY = "<p>1. Envoie <strong>2 000 F</strong> par <strong>Wave</strong> ou <strong>Orange Money</strong> au <strong>78 171 88 76</strong> (Mariame MOUIGNI).<br>2. Préviens Mariame sur WhatsApp avec ton e-mail.<br>3. Dès que c'est validé, appuie sur « Vérifier ».</p>";
+  function waBtn(txt) { return '<a style="display:block;text-align:center;text-decoration:none;border-radius:999px;padding:12px;font-weight:700;font-size:15px;background:#1f9d55;color:#fff" target="_blank" rel="noopener" href="https://wa.me/221781718876?text=' + encodeURIComponent(txt + " Mon e-mail : " + ((user && user.email) || "")) + '">💬 Prévenir Mariame sur WhatsApp</a>'; }
+  function rappelExpiration() {
+    if (!expireLe || isAdmin()) return;
+    var j = joursRestants(expireLe); if (j > 7 || j < 0) return;
+    var k = "medij-rappel-" + ymdLocal(); try { if (localStorage.getItem(k)) return; rawSet.call(ls, k, "1"); } catch (e) {}
+    var o = box("<h2>📅 Ton abonnement se termine bientôt</h2><p>Ton accès à MédiJ est valable jusqu'au <strong>" + frDate(expireLe) + "</strong> (" + (j === 0 ? "aujourd'hui" : "dans " + j + " jour" + (j > 1 ? "s" : "")) + ").</p><p>Pour continuer sans interruption, renouvelle ton accès : <strong>2 000 F</strong> par Wave ou Orange Money au <strong>78 171 88 76</strong>.</p>" + waBtn("Bonjour Mariame, je renouvelle mon abonnement MédiJ (2 000 F).") + '<button class="mjc-s" id="mjc-rx">Plus tard</button>');
+    o.querySelector("#mjc-rx").onclick = close;
+  }
+
   /* ---------- Validation des comptes (réservé à Mariame) ---------- */
   var ADMIN = "3960f8a9-876c-4d1c-bbfc-0578bb80cf5c";
   function isAdmin() { return !!(user && user.id === ADMIN); }
@@ -176,15 +197,16 @@
     var n = 0, al = 0, today = new Date().toISOString().slice(0, 10);
     try { var r = await sb.from("medij_access").select("user_id", { count: "exact", head: true }).eq("statut", "en_attente"); n = r.count || 0; } catch (e) {}
     try { var r2 = await sb.from("medij_ia_alertes").select("id", { count: "exact", head: true }).eq("jour", today); al = r2.count || 0; } catch (e) {}
+    var av = 0; try { var r3 = await sb.from("medij_avis").select("id", { count: "exact", head: true }).eq("lu", false); av = r3.count || 0; } catch (e) {}
     var b = document.getElementById("mjc-adm");
-    if (!n && !al) { if (b) b.remove(); return; }
+    if (!n && !al && !av) { if (b) b.remove(); return; }
     if (!b) { b = el('<button id="mjc-adm" type="button"></button>'); b.onclick = adminBox; document.body.appendChild(b); }
     b.style.background = al ? "#b5533f" : "#3f8a62";
-    b.textContent = (al ? "⚠️ Limite IA atteinte" : "") + (al && n ? " · " : "") + (n ? "👑 " + n + " à valider" : "");
+    b.textContent = [al ? "⚠️ Limite IA atteinte" : "", n ? "👑 " + n + " à valider" : "", av ? "💬 " + av + " avis" : ""].filter(Boolean).join(" · ");
   }
   async function adminBox() {
     var o = box("<h2>👑 Validation des comptes</h2><p>Chargement…</p>");
-    var r = await sb.from("medij_access").select("user_id,email,statut,created_at").order("created_at", { ascending: false });
+    var r = await sb.from("medij_access").select("user_id,email,statut,created_at,expire_le").order("created_at", { ascending: false });
     if (r.error) { msg(o, "Erreur : " + r.error.message, true); return; }
     var rows = (r.data || []).filter(function (x) { return x.user_id !== ADMIN; });
     rows.sort(function (a, b) { return (a.statut === "en_attente" ? 0 : 1) - (b.statut === "en_attente" ? 0 : 1); });
@@ -206,7 +228,10 @@
       (rows.length ? rows.map(function (x) {
         var d = new Date(x.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
         var btn = function (st, t, bg) { return '<button data-u="' + x.user_id + '" data-s="' + st + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:' + bg + ';color:#fff;cursor:pointer">' + t + "</button>"; };
-        return '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:10px;text-align:left"><div style="font-weight:700;word-break:break-all">' + esc2(x.email) + '</div><div style="font-size:.82rem;opacity:.75">' + LBL[x.statut] + " · inscrit le " + d + '</div><div style="display:flex;gap:6px;margin-top:8px">' +
+        var exp = "";
+        if (x.statut === "accepte") { if (!x.expire_le) exp = "<br>📅 Sans date de fin"; else { var jr = joursRestants(x.expire_le); exp = jr < 0 ? '<br><strong style="color:#b5533f">⌛ Expiré depuis le ' + frDate(x.expire_le) + "</strong>" : "<br>📅 Jusqu'au " + frDate(x.expire_le) + (jr <= 7 ? ' <strong style="color:#b5533f">(' + jr + " j)</strong>" : ""); } }
+        return '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:10px;text-align:left"><div style="font-weight:700;word-break:break-all">' + esc2(x.email) + '</div><div style="font-size:.82rem;opacity:.8">' + LBL[x.statut] + " · inscrit le " + d + exp + '</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">' +
+          (x.statut === "accepte" ? '<button data-ext="' + x.user_id + '" data-exp="' + (x.expire_le || "") + '" style="flex:1;border:0;border-radius:999px;padding:8px;font-weight:700;background:#c2577a;color:#fff;cursor:pointer">➕ 1 semestre</button>' : "") +
           (x.statut !== "accepte" ? btn("accepte", "✅ Accepter", "#3f8a62") : "") +
           (x.statut !== "refuse" ? btn("refuse", "⛔ Refuser", "#b5533f") : "") +
           (x.statut !== "en_attente" ? btn("en_attente", "⏳ En attente", "#8a6b78") : "") + "</div></div>";
@@ -216,11 +241,32 @@
     o.querySelectorAll("button[data-u]").forEach(function (b) {
       b.onclick = async function () {
         this.disabled = true;
-        var u = await sb.from("medij_access").update({ statut: this.getAttribute("data-s") }).eq("user_id", this.getAttribute("data-u"));
+        var st = this.getAttribute("data-s"), upd = { statut: st };
+        if (st === "accepte") { var cur = (rows.find(function (y) { return y.user_id === b.getAttribute("data-u"); }) || {}).expire_le; if (!cur || cur < ymdLocal()) upd.expire_le = plusSemestre(); }
+        var u = await sb.from("medij_access").update(upd).eq("user_id", this.getAttribute("data-u"));
         if (u.error) { msg(o, "Erreur : " + u.error.message, true); this.disabled = false; return; }
         adminBadge(); adminBox();
       };
     });
+    o.querySelectorAll("button[data-ext]").forEach(function (b) {
+      b.onclick = async function () {
+        this.disabled = true; var cur = this.getAttribute("data-exp"), base = cur && cur > ymdLocal() ? cur : ymdLocal();
+        var u = await sb.from("medij_access").update({ expire_le: plusSemestre(base) }).eq("user_id", this.getAttribute("data-ext"));
+        if (u.error) { msg(o, "Erreur : " + u.error.message, true); this.disabled = false; return; }
+        adminBox();
+      };
+    });
+    try {
+      var av = await sb.from("medij_avis").select("id,email,texte,lu,created_at").order("created_at", { ascending: false }).limit(50);
+      var V = av.data || [];
+      var sec = '<h2 style="font-size:1.1rem;margin-top:6px">💬 Avis et remarques' + (V.filter(function (x) { return !x.lu; }).length ? " · " + V.filter(function (x) { return !x.lu; }).length + " nouveau(x)" : "") + "</h2>" +
+        (V.length ? V.map(function (x) {
+          return '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:10px;text-align:left;' + (x.lu ? "opacity:.6" : "background:#fdf0f4;color:#3a1f2b") + '"><div style="font-size:.8rem;opacity:.8">' + esc2(x.email || "") + " · " + new Date(x.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + '</div><div style="white-space:pre-wrap;margin-top:4px">' + esc2(x.texte) + "</div>" + (x.lu ? "" : '<button data-lu="' + x.id + '" style="margin-top:8px;border:0;border-radius:999px;padding:6px 12px;font-weight:700;background:#8a6b78;color:#fff;cursor:pointer">Marquer comme lu</button>') + "</div>";
+        }).join("") : "<p>Aucun avis pour l'instant.</p>");
+      var box2 = document.createElement("div"); box2.style.cssText = "display:flex;flex-direction:column;gap:8px;max-height:45vh;overflow:auto"; box2.innerHTML = sec;
+      o.querySelector("#mjc-ax").before(box2);
+      box2.querySelectorAll("button[data-lu]").forEach(function (b) { b.onclick = async function () { this.disabled = true; await sb.from("medij_avis").update({ lu: true }).eq("id", +this.getAttribute("data-lu")); adminBadge(); adminBox(); }; });
+    } catch (e) {}
     o.querySelector("#mjc-ax").onclick = close;
   }
   function passwordBox() {
@@ -231,7 +277,7 @@
   /* ---------- démarrage ---------- */
   if (!window.supabase || !window.supabase.createClient) { cloud.ready = Promise.resolve(); return; }
   sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-  cloud.sb = sb; cloud.url = SB_URL; cloud.key = SB_KEY; cloud.allowed = function () { return allowed; };
+  cloud.sb = sb; cloud.url = SB_URL; cloud.key = SB_KEY; cloud.allowed = function () { return allowed; }; cloud.expire = function () { return expireLe; };
   cloud.client = sb;
   var started = false;
   async function onUser(u) {
@@ -241,7 +287,7 @@
     var statut = await access();
     if (statut === "erreur") { setState("error"); close(); return; } /* hors ligne : on laisse utiliser ce qui est sur l'appareil */
     if (statut !== "accepte") { allowed = false; setState("off"); gateBox(statut); return; }
-    allowed = true; close(); if (isAdmin()) { adminBadge(); setInterval(adminBadge, 60000); }
+    allowed = true; close(); setTimeout(rappelExpiration, 2500); if (isAdmin()) { adminBadge(); setInterval(adminBadge, 60000); }
     try {
       var changed = await pull();
       if (changed) { var k = "medijsync-reload"; if (!sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); location.reload(); return; } }

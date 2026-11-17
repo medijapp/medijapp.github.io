@@ -80,6 +80,7 @@
     ["🎯 Comment marche le défi du jour ?", "Sur <strong>Aujourd'hui</strong>, le bouton jaune lance 10 QCM tirés de tes cours. Un défi par jour garde ta série 🔥 et débloque des badges 🏅."],
     ["🎓 Changer de filière ou de semestre ?", "Filière : dans <strong>Profil</strong>. Semestre : en haut de <strong>Matières</strong>, choisis la période (L1 · S1, L2 · S3…)."],
     ["📲 Installer MédiJ sur mon téléphone ?", "Android (Chrome) : menu <strong>⋮</strong> → <strong>Installer l'application</strong>. iPhone (Safari) : bouton <strong>Partager</strong> → <strong>Sur l'écran d'accueil</strong>."],
+    ["📅 Quand se termine mon abonnement ?", "Appuie sur <strong>Synchronisé</strong> en haut à droite : la date de fin de ton abonnement s'affiche. MédiJ te prévient aussi <strong>7 jours avant</strong>. Pour renouveler : 2 000 F par Wave ou Orange Money au 78 171 88 76, puis préviens Mariame."],
     ["🔑 J'ai oublié mon mot de passe", "Déconnecte-toi, écris ton e-mail, appuie sur <strong>Mot de passe oublié</strong>, puis ouvre le <strong>dernier</strong> e-mail reçu (regarde aussi dans les spams)."]
   ];
   var css = "#mh-tip{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;max-width:520px;margin:0 auto;background:#8e3a56;color:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;gap:8px}" +
@@ -102,12 +103,22 @@
     o = document.createElement("div"); o.id = "mh-o";
     o.innerHTML = '<div id="mh-b" role="dialog" aria-modal="true" aria-label="Aide"><h2>❓ Comment faire ?</h2>' +
       FAQ.map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") +
+      '<div style="border:1px solid #f2d9e1;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px"><strong>💬 Donne ton avis</strong><span style="font-size:.88rem;opacity:.8">Une idée, un bug, quelque chose qui manque pour ta filière ? Mariame lit tous les messages pour améliorer MédiJ.</span><textarea id="mh-avis" rows="3" maxlength="3000" placeholder="Écris ta remarque ici…" style="width:100%;border:1px solid #f2d9e1;border-radius:10px;padding:10px;font:inherit;background:transparent;color:inherit"></textarea><button class="bt" id="mh-send" style="background:#c2577a;color:#fff">Envoyer mon avis</button><span id="mh-sent" style="font-size:.88rem"></span></div>' +
       '<button class="bt" id="mh-guide" style="background:#f9dde6;color:#b4506f">📖 Revoir le guide complet</button>' +
       '<a class="bt" id="mh-wa" target="_blank" rel="noopener" href="' + WA + '">💬 Poser une question à Mariame</a>' +
       '<button class="bt" id="mh-x">Fermer</button></div>';
     document.body.appendChild(o);
     o.addEventListener("click", function (e) { if (e.target === o) o.remove(); });
     document.getElementById("mh-x").onclick = function () { o.remove(); };
+    document.getElementById("mh-send").onclick = async function () {
+      var t = (document.getElementById("mh-avis").value || "").trim(), out = document.getElementById("mh-sent");
+      if (t.length < 2) { out.textContent = "Écris d'abord ta remarque."; return; }
+      var c = window.__MEDIJ_CLOUD; if (!c || !c.sb || !c.user || !c.user()) { out.textContent = "Connecte-toi à ton compte pour envoyer ton avis."; return; }
+      this.disabled = true; out.textContent = "Envoi…";
+      var r = await c.sb.from("medij_avis").insert({ texte: t, email: c.user().email || null });
+      if (r.error) { this.disabled = false; out.textContent = "Envoi impossible, réessaie plus tard."; return; }
+      document.getElementById("mh-avis").value = ""; out.textContent = "✅ Merci ! Ton avis a bien été envoyé à Mariame.";
+    };
     document.getElementById("mh-guide").onclick = function () { o.remove(); window.medijTuto && window.medijTuto(); };
   };
 
