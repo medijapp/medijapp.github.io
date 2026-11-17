@@ -156,7 +156,7 @@
       : statut === "expire" ? "<h2>⌛ Ton abonnement est terminé</h2><p>Ton accès à MédiJ a pris fin le <strong>" + frDate(expireLe) + "</strong>. Tes cours et ta progression sont gardés 🔒</p><p>Pour continuer, renouvelle ton accès : <strong>2 000 F pour un semestre</strong>.</p>" + PAY + waBtn("Bonjour Mariame, je renouvelle mon abonnement MédiJ (2 000 F).") + '<button class="mjc-p" id="mjc-chk">Vérifier</button>'
       : "<h2>⏳ Dernière étape : ton accès</h2><p>Ton compte <strong>" + (user.email || "") + "</strong> est bien créé 🎉</p>" +
         "<p>L'accès à MédiJ coûte <strong>2 000 F par semestre</strong> (prix de lancement).</p>" +
-        "<p>1. Envoie <strong>2 000 F</strong> par <strong>Wave</strong> ou <strong>Orange Money</strong> au <strong>78 171 88 76</strong> (Mariame MOUIGNI).<br>2. Préviens Mariame sur WhatsApp avec ton e-mail.<br>3. Dès que ton compte est validé, appuie sur « Vérifier ».</p>" +
+        "<p>1. Envoie <strong>2 000 F</strong> par <strong>Wave</strong> ou <strong>Orange Money</strong> au <strong>78 171 88 76</strong> (Mariame MOUIGNI).<br>2. Préviens Mariame sur WhatsApp avec ton e-mail.<br>3. Dès que ton compte est validé, appuie sur « Vérifier ».</p>" + FRP +
         '<a class="mjc-p" style="display:block;text-align:center;text-decoration:none;border-radius:999px;padding:12px;font-weight:700;font-size:15px;background:#1f9d55;color:#fff" target="_blank" rel="noopener" href="https://wa.me/221781718876?text=' + encodeURIComponent("Bonjour Mariame, j'ai payé les 2 000 F pour MédiJ. Mon e-mail : " + (user.email || "")) + '">💬 Prévenir Mariame sur WhatsApp</a>' +
         '<button class="mjc-p" id="mjc-chk">Vérifier</button>');
     o.querySelector("#mjc-b").insertAdjacentHTML("beforeend", '<button class="mjc-s" id="mjc-out">Me déconnecter</button>');
@@ -178,13 +178,14 @@
   function frDate(s) { try { return new Date(s + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return s; } }
   function plusSemestre(from) { var d = new Date((from || ymdLocal()) + "T12:00:00"); d.setMonth(d.getMonth() + 6); return ymdLocal(d); }
   function joursRestants(s) { return Math.round((new Date(s + "T12:00:00") - new Date(ymdLocal() + "T12:00:00")) / 864e5); }
-  var PAY = "<p>1. Envoie <strong>2 000 F</strong> par <strong>Wave</strong> ou <strong>Orange Money</strong> au <strong>78 171 88 76</strong> (Mariame MOUIGNI).<br>2. Préviens Mariame sur WhatsApp avec ton e-mail.<br>3. Dès que c'est validé, appuie sur « Vérifier ».</p>";
+  var FRP = '<p style="font-size:.9rem;opacity:.9">🇫🇷 <strong>Tu es en France ?</strong> Envoie <strong>5 €</strong> avec Taptap Send ou LemFi, vers le Wave ou l\'Orange Money <strong>+221 78 171 88 76</strong> (Mariame MOUIGNI), puis préviens Mariame.</p>';
+  var PAY = "<p>1. Envoie <strong>2 000 F</strong> par <strong>Wave</strong> ou <strong>Orange Money</strong> au <strong>78 171 88 76</strong> (Mariame MOUIGNI).<br>2. Préviens Mariame sur WhatsApp avec ton e-mail.<br>3. Dès que c'est validé, appuie sur « Vérifier ».</p>" + FRP;
   function waBtn(txt) { return '<a style="display:block;text-align:center;text-decoration:none;border-radius:999px;padding:12px;font-weight:700;font-size:15px;background:#1f9d55;color:#fff" target="_blank" rel="noopener" href="https://wa.me/221781718876?text=' + encodeURIComponent(txt + " Mon e-mail : " + ((user && user.email) || "")) + '">💬 Prévenir Mariame sur WhatsApp</a>'; }
   function rappelExpiration() {
     if (!expireLe || isAdmin()) return;
     var j = joursRestants(expireLe); if (j > 7 || j < 0) return;
     var k = "medij-rappel-" + ymdLocal(); try { if (localStorage.getItem(k)) return; rawSet.call(ls, k, "1"); } catch (e) {}
-    var o = box("<h2>📅 Ton abonnement se termine bientôt</h2><p>Ton accès à MédiJ est valable jusqu'au <strong>" + frDate(expireLe) + "</strong> (" + (j === 0 ? "aujourd'hui" : "dans " + j + " jour" + (j > 1 ? "s" : "")) + ").</p><p>Pour continuer sans interruption, renouvelle ton accès : <strong>2 000 F</strong> par Wave ou Orange Money au <strong>78 171 88 76</strong>.</p>" + waBtn("Bonjour Mariame, je renouvelle mon abonnement MédiJ (2 000 F).") + '<button class="mjc-s" id="mjc-rx">Plus tard</button>');
+    var o = box("<h2>📅 Ton abonnement se termine bientôt</h2><p>Ton accès à MédiJ est valable jusqu'au <strong>" + frDate(expireLe) + "</strong> (" + (j === 0 ? "aujourd'hui" : "dans " + j + " jour" + (j > 1 ? "s" : "")) + ").</p><p>Pour continuer sans interruption, renouvelle ton accès : <strong>2 000 F</strong> par Wave ou Orange Money au <strong>78 171 88 76</strong>.</p>" + FRP + waBtn("Bonjour Mariame, je renouvelle mon abonnement MédiJ (2 000 F).") + '<button class="mjc-s" id="mjc-rx">Plus tard</button>');
     o.querySelector("#mjc-rx").onclick = close;
   }
 
