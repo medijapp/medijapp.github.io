@@ -288,7 +288,7 @@
     var statut = await access();
     if (statut === "erreur") { setState("error"); close(); return; } /* hors ligne : on laisse utiliser ce qui est sur l'appareil */
     if (statut !== "accepte") { allowed = false; setState("off"); gateBox(statut); return; }
-    allowed = true; close(); setTimeout(rappelExpiration, 2500); if (isAdmin()) { adminBadge(); setInterval(adminBadge, 60000); }
+    allowed = true; close(); setTimeout(rappelExpiration, 2500); if (isAdmin()) { adminBadge(); setInterval(adminBadge, 60000); if (/gestion/i.test(location.hash)) setTimeout(adminBox, 600); window.addEventListener("hashchange", function () { if (/gestion/i.test(location.hash)) adminBox(); }); }
     try {
       var changed = await pull();
       if (changed) { var k = "medijsync-reload"; if (!sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); location.reload(); return; } }
