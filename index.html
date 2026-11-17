@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261117164000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261117165000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -918,8 +918,8 @@ function viewMatieres(){
   return topbar("Matières")+`<div class="row" style="justify-content:space-between;margin-bottom:14px"><h1>Mes matières · ${esc(curPer())}</h1><button class="btn" data-act="new">+ Chapitre</button></div>
   <div class="chips" style="margin-bottom:14px">${allPers().map(p=>`<button class="chip" data-act="perset" data-p="${esc(p)}" aria-pressed="${p===curPer()}">${esc(p)} <span style="opacity:.7">· ${S.decks.filter(d=>perOf(d)===p).length}</span></button>`).join("")}<button class="chip" data-act="peradd">+ Semestre</button></div>
   ${searchBox("hq","","Chercher dans toutes les matières…")}
-  <button class="mini" data-act="casview" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· tous les cours vus</span></span><span class="pill">→</span></button>
-  <button class="mini" data-act="synopen" data-m="" style="margin-bottom:14px"><span><strong>Syndromes et triades</strong> <span class="muted">· toutes les matières</span></span><span class="pill">→</span></button>
+  ${filCas()?`<button class="mini" data-act="casview" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· tous les cours vus</span></span><span class="pill">→</span></button>`:""}
+  ${filMed()?`<button class="mini" data-act="synopen" data-m="" style="margin-bottom:14px"><span><strong>Syndromes et triades</strong> <span class="muted">· toutes les matières</span></span><span class="pill">→</span></button>`:""}
   ${keys.length?`<div class="mgrid pins">${keys.map(k=>{const list=groups[k],done=list.filter(d=>d.learnedOn).length,due=list.reduce((n,d)=>n+dueCards(d).length,0),src=list.filter(d=>S.src.has(d.id)).length;
     const im=list.map(pinImg).find(Boolean),hh=pinHash(k);
     return `<button class="mtile pin" data-act="mat" data-m="${esc(k)}">${im&&hh%2?`<div class="cover img" style="aspect-ratio:${["4/5","1/1","3/4"][hh%3]}"><img src="${esc(im)}" alt="" loading="lazy"></div>`:`<div class="cover c${hh%6}" style="height:${[90,120,150][hh%3]}px"><span class="ini">${esc(k.charAt(0).toUpperCase())}</span></div>`}<div class="body"><h3>${esc(k)}</h3>
@@ -939,8 +939,8 @@ function viewMatiere(){
   return topbar(S.mat,true)+`<div class="hero"><div class="label">Matière</div><h1>${esc(S.mat)}</h1>
     <div class="progress" style="margin-top:8px"><i style="width:${Math.round(done/all.length*100)}%"></i></div>
     <div class="help">${done} révisé${done>1?"s":""} · ${all.length-done} à réviser · ${all.length} au total</div></div>
-  <button class="mini" data-act="casview" data-m="${esc(S.mat)}" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· cette matière</span></span><span class="pill">→</span></button>
-  <button class="mini" data-act="synopen" data-m="${esc(S.mat)}" style="margin-bottom:12px"><span><strong>Syndromes et triades</strong> <span class="muted">· ${syndromes(S.mat).length} relevés dans les cours</span></span><span class="pill">→</span></button>
+  ${filCas()?`<button class="mini" data-act="casview" data-m="${esc(S.mat)}" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· cette matière</span></span><span class="pill">→</span></button>`:""}
+  ${filMed()?`<button class="mini" data-act="synopen" data-m="${esc(S.mat)}" style="margin-bottom:12px"><span><strong>Syndromes et triades</strong> <span class="muted">· ${syndromes(S.mat).length} relevés dans les cours</span></span><span class="pill">→</span></button>`:""}
   <div class="chips" style="margin-bottom:14px">${[["all","Tous"],["todo","À réviser"],["done","Révisés"]].map(([k,l])=>`<button class="chip" data-act="mfilter" data-f="${k}" aria-pressed="${S.mf===k}">${l}</button>`).join("")}</div>
   <div class="section">${list.length?inner:`<div class="empty">Aucun chapitre dans ce filtre.</div>`}</div>`;
 }
@@ -1388,7 +1388,11 @@ function jPanel(d,compact){
   ${compact?"":d.learnedOn?`<div class="row" style="gap:8px"><label class="help" style="display:flex;gap:6px;align-items:center">J0 (appris le)<input type="date" data-jdate="${d.id}" value="${esc(d.learnedOn)}" style="width:auto;padding:6px 8px"></label>${info.finished?`<span class="pill ok">Cycle terminé</span>`:info.next?`<span class="help">Prochain : <strong>J${info.next}</strong> le ${fmtDate(info.date)}</span>`:""}</div><p class="help">Touche un J pour le cocher ou le décocher.</p>`:`<p class="help">Touche <strong>J0</strong> le jour où tu apprends le cours : les J1, J3, J7, J15 et J30 se calculent à partir de là.</p>`}`;
 }
 
-const FILIERES=["Médecine","Pharmacie","Odontologie (chirurgie dentaire)","Sciences infirmières","Sage-femme","Kinésithérapie","Autre filière de santé"];
+const FILIERES=["Médecine","Pharmacie","Odontologie (chirurgie dentaire)","Biologie","Sciences infirmières","Sage-femme","Kinésithérapie","Autre filière de santé"];
+/* Ce que chaque filière voit : outils de sémiologie médicale (triades, histoire de la maladie, SITECHIA, signes) et cas cliniques */
+const FIL_MED=["Médecine","Odontologie (chirurgie dentaire)","Sage-femme"],FIL_CAS=[...FIL_MED,"Sciences infirmières","Kinésithérapie","Pharmacie"];
+function filMed(){const f=filiere();return !f||FIL_MED.includes(f)}
+function filCas(){const f=filiere();return !f||FIL_CAS.includes(f)}
 function filiere(){try{return localStorage.getItem("medij-filiere")||""}catch(e){return ""}}
 const filOpts=v=>FILIERES.map(f=>`<option${f===v?" selected":""}>${f}</option>`).join("");
 function prenom(){try{const v=localStorage.getItem("medij-prenom");if(v!=null)return v}catch(e){}return ""}
@@ -3277,7 +3281,7 @@ function tabTrain(d){
   const sec=X.trSec||"",S=d.signes||[],GG=d.grilles||(d.grille?[d.grille]:[]),G=GG.length?GG[Math.min(X.trG||0,GG.length-1)]:null,T=ficheTables(d),N=ficheNums(d),ok=d.memoOk||{};
   const semio=/s[ée]miolog/i.test(d.matiere||"");
   const LX=d.lexique||[];
-  const tabs=[["lex","📖 Lexique"],semio&&["hdm","🩺 Histoire de la maladie"],S.length&&["signes","🔍 Signes et mécanismes"],S.length&&["devine","🎯 Je suis un signe"],G&&["grille",GG.length>1?"📋 Grilles SITECHIA ("+GG.length+")":"📋 Grille"],T.length&&["tab",(d.comparatifs||[]).length?"📊 Tableaux comparatifs":"🗂️ Tableaux cachés"],N.length&&["num","🔢 Chiffres clés"],["cas","🧑‍⚕️ Patient imaginaire"]].filter(Boolean);
+  const tabs=[["lex","📖 Lexique"],semio&&filMed()&&["hdm","🩺 Histoire de la maladie"],S.length&&filMed()&&["signes","🔍 Signes et mécanismes"],S.length&&filMed()&&["devine","🎯 Je suis un signe"],G&&filMed()&&["grille",GG.length>1?"📋 Grilles SITECHIA ("+GG.length+")":"📋 Grille"],T.length&&["tab",(d.comparatifs||[]).length?"📊 Tableaux comparatifs":"🗂️ Tableaux cachés"],N.length&&["num","🔢 Chiffres clés"],filCas()&&["cas","🧑‍⚕️ Patient imaginaire"]].filter(Boolean);
   const cur=tabs.some(t=>t[0]===sec)?sec:tabs[0][0];
   let body="";
   if(cur==="lex"){const hide=!!X.trHideL,busy=X.ai["lex-"+d.id];
