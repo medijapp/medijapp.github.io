@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261117163000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261117164000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2613,9 +2613,36 @@ function mindMap(d){
       :b.hl.length?`<div class="mmhl">${b.hl.slice(0,4).map(h=>`<span>${esc(h)}</span>`).join("")}</div>`:""}</div>`).join("")}</div></div>
   <p class="help">Carte construite à partir des titres et des points surlignés de ta fiche. Touche une case pour ouvrir la fiche à cet endroit.</p>`}
 function courseFigs(d){const out=[];for(const m of String(d.fiche||"").matchAll(/!\[([^\]]*)\]\(([^)\s]+)\)/g)){const u=safeUrl(m[2]);if(u)out.push({alt:m[1],u})}return out}
+function schemasPanel(d){
+  const L=d.schemas||[],busy=X.ai["sch-"+d.id];
+  const list=L.map((sc,i)=>`<div class="simp" style="gap:8px">${flowSVG(sc)||`<p class="help">Schéma illisible.</p>`}${(sc.retenir||[]).length?`<div class="figx-r"><strong>À retenir</strong><ul>${sc.retenir.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></div>`:""}<button class="btn ghost small" data-act="schdel" data-i="${i}" style="align-self:flex-end">Supprimer</button></div>`).join("");
+  return `<div class="panel stack" style="margin-bottom:14px"><div class="label">🧩 Schémas du cours${L.length?" · "+L.length:""}</div>
+  ${list||`<p class="help" style="margin:0">MédiJ dessine les mécanismes, les étapes, les classifications et les arbres décisionnels de ton cours en schémas fléchés, à partir de ton cours uniquement.</p>`}
+  ${aiOK()?`<div class="stack" style="gap:8px"><button class="btn" data-act="schgen" ${busy?"disabled":""} style="align-self:flex-start">${busy?"Je dessine les schémas…":L.length?"Refaire les schémas du chapitre":"✨ Générer les schémas du chapitre"}</button>
+  <div class="row" style="flex-wrap:nowrap"><input type="text" id="sch-in-${d.id}" placeholder="Un schéma sur… (ex. physiopathologie de l'ictère)" style="flex:1;min-width:0"><button class="btn soft" data-act="schone" ${busy?"disabled":""}>Créer</button></div></div>`:noAI}
+  <p class="help" style="margin:0">Schémas faits uniquement d'après ton cours : en cas de doute, ton cours fait foi.</p></div>`;
+}
+async function doSchemas(d,sujet){
+  const k="sch-"+d.id;X.ai[k]=true;render();
+  try{
+    const ask=sujet?`Fais UN seul schéma sur ce sujet précis du cours : « ${sujet} ». Si le cours ne contient pas ce sujet, renvoie {"schemas":[]}.`:`Fais de 3 à 6 schémas qui couvrent les notions les plus importantes du chapitre (mécanismes, physiopathologie, étapes, classifications, arbres décisionnels).`;
+    const o=await askJSON(`Tu es un professeur de médecine qui fait des schémas de révision clairs pour une étudiante, à partir de SON cours « ${d.name} » (${d.matiere||""}).
+${ask}
+Chaque schéma est un enchaînement fléché : des boîtes courtes (« noeuds », 2 à 12, libellés de 2 à 6 mots, termes exacts du cours) reliées par des flèches (« liens », de → a, avec un label court facultatif comme « entraîne », « si oui », « si non »). Va de la cause vers la conséquence, ou du début vers la fin. Ajoute 2 à 3 points « retenir » tirés du cours.
+RÈGLES : ${COURSE_RULE} N'invente aucune étape, cause, chiffre ou traitement. Garde les chiffres exacts du cours.
+Réponds uniquement en JSON : {"schemas":[{"titre":"…","noeuds":[{"id":"a","label":"…"}],"liens":[{"de":"a","a":"b","label":"…"}],"retenir":["…"]}]}
+COURS :
+${courseText(d,50000)}`,{modelTier:"default"});
+    if(!o||!Array.isArray(o.schemas))throw {code:"invalid_json"};
+    const clean=o.schemas.filter(x=>x&&Array.isArray(x.noeuds)&&x.noeuds.length>=2).slice(0,6).map(x=>({titre:String(x.titre||""),noeuds:x.noeuds.slice(0,12).map(n=>({id:String(n.id),label:String(n.label||"").slice(0,60)})),liens:(x.liens||[]).map(l=>({de:String(l.de),a:String(l.a),label:l.label?String(l.label).slice(0,26):""})),retenir:(x.retenir||[]).map(String).slice(0,4)}));
+    if(!clean.length){toast(sujet?"Ce sujet n'est pas dans le cours":"Aucun schéma trouvé dans ce cours");}
+    else{const live=getDeck(d.id);live.schemas=sujet?[...(live.schemas||[]),...clean]:clean;markDirty(live.id);toast(clean.length+" schéma"+(clean.length>1?"s":"")+" ajouté"+(clean.length>1?"s":""))}
+  }catch(e){toast(aiErr(e))}
+  X.ai[k]=false;render();
+}
 function tabVisuel(d){
   const figs=courseFigs(d),sp=d.simple,busy=X.ai["simp-"+d.id];
-  return `<div class="panel stack" style="margin-bottom:14px"><div class="label">Vue d'ensemble du chapitre</div>${mindMap(d)}</div>
+  return `<div class="panel stack" style="margin-bottom:14px"><div class="label">Vue d'ensemble du chapitre</div>${mindMap(d)}</div> ${schemasPanel(d)}
   ${figs.length?`<div class="panel stack" style="margin-bottom:14px"><div class="label">Les schémas du cours expliqués · ${figs.length}</div>
     <p class="help" style="margin:0">Touche une image pour l'agrandir. L'explication décrit ce que montre le schéma, à partir du cours.</p>
     ${figs.map(f=>{const k=figKey(f.u),x=(d.figExpl||{})[k],busy=X.ai["fx-"+k];return `<div class="figx"><button class="figx-img" data-act="zoom" data-src="${esc(f.u)}"><img src="${esc(f.u)}" alt="${esc(f.alt)}" loading="lazy"></button>
@@ -3357,6 +3384,9 @@ document.addEventListener("click",async e=>{
       const o={};["edt","prieres","coran","batch"].forEach(k=>o[k]=!!$("#ob-"+k)?.checked);o.perso=!!$("#ob-perso")?.checked;
       window.__seedPlanning&&window.__seedPlanning(o);location.reload();break}
     case "simple":if(d)doSimple(d);break;
+    case "schgen":if(d)doSchemas(d,"");break;
+    case "schone":if(d){const v=($("#sch-in-"+d.id)?.value||"").trim();if(!v){toast("Écris le sujet du schéma");break}doSchemas(d,v)}break;
+    case "schdel":if(d){const live=getDeck(d.id);(live.schemas||[]).splice(+b.dataset.i,1);markDirty(live.id);render()}break;
     case "lesson":if(d){if(b.dataset.re){d.lesson=null;markDirty(d.id)}doLesson(d)}break;
     case "tumode":if(d){(X.tuMode??={})[d.id]=b.dataset.v;render()}break;
     case "tugo":if(d){const v=b.dataset.v;(X.tuI??={})[d.id]=(v==="end"||v==="rappel")?v:+v;render();window.scrollTo(0,0)}break;
