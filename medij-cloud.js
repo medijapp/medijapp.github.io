@@ -70,14 +70,14 @@
   }
 
   /* ---------- interface ---------- */
-  var css = "#mjc-pill{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:10px;z-index:50;border:0;border-radius:999px;padding:5px 10px;font:600 12px system-ui,sans-serif;background:#10243a;color:#fff;opacity:.88;box-shadow:0 2px 8px rgba(0,0,0,.2)}" +
+  var css = "#mjc-pill{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:10px;z-index:50;border:0;border-radius:999px;padding:5px 10px;font:600 12px system-ui,sans-serif;background:#b4506f;color:#fff;opacity:.88;box-shadow:0 2px 8px rgba(0,0,0,.2)}" +
     "#mjc-pill.err{background:#b5533f}#mjc-pill.loc{background:#6b5f66}" +
-    "#mjc-o{position:fixed;inset:0;z-index:60;background:rgba(16,36,58,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,sans-serif}" +
+    "#mjc-o{position:fixed;inset:0;z-index:60;background:rgba(74,26,44,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,sans-serif}" +
     "#mjc-b{background:#fff;color:#1f2430;border-radius:20px;max-width:400px;width:100%;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.25)}" +
     "#mjc-b h2{margin:0;font-size:1.35rem}#mjc-b p{margin:0;font-size:.92rem;color:#4b5563;line-height:1.45}" +
     "#mjc-b input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d6dbe3;border-radius:12px;font-size:16px}" +
     "#mjc-b button{border:0;border-radius:999px;padding:12px;font-weight:700;font-size:15px;cursor:pointer}" +
-    ".mjc-p{background:#10243a;color:#fff}.mjc-s{background:#eef2f7;color:#10243a}.mjc-l{background:none!important;color:#2b6cb0;text-decoration:underline;padding:4px!important;font-weight:600!important}" +
+    ".mjc-p{background:#b4506f;color:#fff}.mjc-s{background:#eef2f7;color:#b4506f}.mjc-l{background:none!important;color:#2b6cb0;text-decoration:underline;padding:4px!important;font-weight:600!important}" +
     ".mjc-m{font-size:.88rem;padding:8px 10px;border-radius:10px;background:#eef4fb}.mjc-m.e{background:#fbeaea;color:#8a1f1f}";
   function el(h) { var d = document.createElement("div"); d.innerHTML = h; return d.firstElementChild; }
   function setState(s) {
@@ -92,7 +92,7 @@
     document.body.appendChild(p); setState(state);
   }
   function close() { var o = document.getElementById("mjc-o"); if (o) o.remove(); }
-  function box(inner) { close(); var o = el('<div id="mjc-o"><div id="mjc-b">' + inner + "</div></div>"); o.style.background = "rgba(16,36,58,.88)"; document.body.appendChild(o); return o; }
+  function box(inner) { close(); var o = el('<div id="mjc-o"><div id="mjc-b">' + inner + "</div></div>"); o.style.background = "rgba(74,26,44,.88)"; document.body.appendChild(o); return o; }
   function msg(o, t, e) { var m = o.querySelector(".mjc-m"); if (!m) { m = el('<div class="mjc-m"></div>'); o.querySelector("#mjc-b").appendChild(m); } m.className = "mjc-m" + (e ? " e" : ""); m.textContent = t; }
   var FR = function (e) {
     var t = (e && e.message) || String(e || "");
@@ -155,7 +155,7 @@
         '<a class="mjc-p" style="display:block;text-align:center;text-decoration:none;border-radius:999px;padding:12px;font-weight:700;font-size:15px;background:#1f9d55;color:#fff" target="_blank" rel="noopener" href="https://wa.me/221781718876?text=' + encodeURIComponent("Bonjour Mariame, j'ai payé les 2 000 F pour MédiJ. Mon e-mail : " + (user.email || "")) + '">💬 Prévenir Mariame sur WhatsApp</a>' +
         '<button class="mjc-p" id="mjc-chk">Vérifier</button>');
     o.querySelector("#mjc-b").insertAdjacentHTML("beforeend", '<button class="mjc-s" id="mjc-out">Me déconnecter</button>');
-    o.style.background = "rgba(16,36,58,.92)";
+    o.style.background = "rgba(74,26,44,.92)";
     var chk = o.querySelector("#mjc-chk");
     if (chk) chk.onclick = async function () { this.disabled = true; var st2 = await access(); if (st2 === "accepte") location.reload(); else { this.disabled = false; msg(o, "Pas encore validé. Réessaie un peu plus tard."); } };
     o.querySelector("#mjc-out").onclick = async function () { await sb.auth.signOut(); clearLocal(); setMeta({}); location.reload(); };

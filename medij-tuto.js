@@ -13,13 +13,13 @@
     { ic: "📲", t: "8. Installe MédiJ", d: "Dans ton navigateur, choisis <strong>« Ajouter à l'écran d'accueil »</strong> (ou « Installer l'application ») : MédiJ s'ouvrira comme une vraie appli." },
     { ic: "🚀", t: "C'est parti !", d: "Commence par importer ton premier cours dans <strong>En classe</strong>. Sur chaque page, une astuce t'expliquera quoi faire. Et le bouton <strong>❓ Aide</strong> répond à tes questions. Bonnes révisions !" }
   ];
-  var css = "#mt-o{position:fixed;inset:0;z-index:45;background:rgba(16,36,58,.72);display:flex;align-items:center;justify-content:center;padding:18px;font-family:system-ui,-apple-system,sans-serif}" +
+  var css = "#mt-o{position:fixed;inset:0;z-index:45;background:rgba(74,26,44,.72);display:flex;align-items:center;justify-content:center;padding:18px;font-family:system-ui,-apple-system,sans-serif}" +
     "#mt-b{background:#fff;color:#1f1a22;border-radius:24px;max-width:420px;width:100%;padding:26px 22px 20px;display:flex;flex-direction:column;gap:14px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}" +
     "#mt-b .ic{font-size:3.2rem;line-height:1}#mt-b h2{margin:0;font-size:1.3rem}#mt-b p{margin:0;font-size:1rem;line-height:1.5;color:#3d3540}" +
-    "#mt-dots{display:flex;gap:6px;justify-content:center}#mt-dots i{width:8px;height:8px;border-radius:50%;background:#e2dbe0}#mt-dots i.on{background:#1d6a58;width:22px;border-radius:99px}" +
+    "#mt-dots{display:flex;gap:6px;justify-content:center}#mt-dots i{width:8px;height:8px;border-radius:50%;background:#f2d9e1}#mt-dots i.on{background:#b4506f;width:22px;border-radius:99px}" +
     "#mt-nav{display:flex;gap:10px}#mt-nav button{flex:1;border:0;border-radius:999px;padding:12px;font-weight:800;font-size:15px;cursor:pointer}" +
-    "#mt-next{background:#1d6a58;color:#fff}#mt-prev{background:#eef2f0;color:#1f1a22}#mt-skip{border:0;background:none;color:#6b5f66;font-size:.88rem;text-decoration:underline;cursor:pointer}" +
-    "@media (prefers-color-scheme:dark){#mt-b{background:#211b27;color:#efe8ee}#mt-b p{color:#cfc4cc}#mt-prev{background:#3a3040;color:#efe8ee}#mt-dots i{background:#3a3040}}";
+    "#mt-next{background:#b4506f;color:#fff}#mt-prev{background:#fbeef2;color:#1f1a22}#mt-skip{border:0;background:none;color:#6b5f66;font-size:.88rem;text-decoration:underline;cursor:pointer}" +
+    "@media (prefers-color-scheme:dark){#mt-b{background:#271a22;color:#efe8ee}#mt-b p{color:#cfc4cc}#mt-prev{background:#43303a;color:#efe8ee}#mt-dots i{background:#43303a}}";
   var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
 
   var i = 0;
@@ -81,16 +81,16 @@
     ["📲 Installer MédiJ sur mon téléphone ?", "Android (Chrome) : menu <strong>⋮</strong> → <strong>Installer l'application</strong>. iPhone (Safari) : bouton <strong>Partager</strong> → <strong>Sur l'écran d'accueil</strong>."],
     ["🔑 J'ai oublié mon mot de passe", "Déconnecte-toi, écris ton e-mail, appuie sur <strong>Mot de passe oublié</strong>, puis ouvre le <strong>dernier</strong> e-mail reçu (regarde aussi dans les spams)."]
   ];
-  var css = "#mh-tip{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;max-width:520px;margin:0 auto;background:#10243a;color:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;gap:8px}" +
-    "#mh-tip strong{color:#ffd95a}#mh-tip h3{margin:0;font-size:1rem}#mh-tip p{margin:0;font-size:.93rem;line-height:1.45}" +
+  var css = "#mh-tip{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:30;max-width:520px;margin:0 auto;background:#8e3a56;color:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;gap:8px}" +
+    "#mh-tip strong{color:#ffd6e2}#mh-tip h3{margin:0;font-size:1rem}#mh-tip p{margin:0;font-size:.93rem;line-height:1.45}" +
     "#mh-tip .r{display:flex;gap:8px;justify-content:flex-end}#mh-tip button{border:0;border-radius:999px;padding:8px 14px;font-weight:800;cursor:pointer}" +
-    "#mh-ok{background:#fff;color:#10243a}#mh-more{background:transparent;color:#fff;text-decoration:underline}" +
-    "#mh-o{position:fixed;inset:0;z-index:46;background:rgba(16,36,58,.72);display:flex;align-items:flex-end;justify-content:center;font-family:system-ui,-apple-system,sans-serif}" +
+    "#mh-ok{background:#fff;color:#8e3a56}#mh-more{background:transparent;color:#fff;text-decoration:underline}" +
+    "#mh-o{position:fixed;inset:0;z-index:46;background:rgba(74,26,44,.72);display:flex;align-items:flex-end;justify-content:center;font-family:system-ui,-apple-system,sans-serif}" +
     "#mh-b{background:#fff;color:#1f1a22;border-radius:24px 24px 0 0;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}" +
-    "#mh-b h2{margin:0 0 4px;font-size:1.25rem}#mh-b details{border:1px solid #ecd8d1;border-radius:14px;padding:10px 12px}#mh-b summary{font-weight:800;cursor:pointer}#mh-b details p{margin:8px 0 0;line-height:1.5}" +
-    "#mh-b .bt{border:0;border-radius:999px;padding:12px;font-weight:800;cursor:pointer;text-align:center;text-decoration:none;display:block}#mh-wa{background:#1f9d55;color:#fff}#mh-x{background:#eef2f0;color:#1f1a22}" +
-    "#mh-btn{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));right:10px;z-index:20;border:0;border-radius:999px;padding:6px 11px;font:800 13px system-ui,sans-serif;background:#fff;color:#10243a;box-shadow:0 3px 10px rgba(0,0,0,.15);cursor:pointer}" +
-    "@media (prefers-color-scheme:dark){#mh-b{background:#211b27;color:#efe8ee}#mh-b details{border-color:#3a3040}#mh-x{background:#3a3040;color:#efe8ee}#mh-btn{background:#211b27;color:#efe8ee}}";
+    "#mh-b h2{margin:0 0 4px;font-size:1.25rem}#mh-b details{border:1px solid #f2d9e1;border-radius:14px;padding:10px 12px}#mh-b summary{font-weight:800;cursor:pointer}#mh-b details p{margin:8px 0 0;line-height:1.5}" +
+    "#mh-b .bt{border:0;border-radius:999px;padding:12px;font-weight:800;cursor:pointer;text-align:center;text-decoration:none;display:block}#mh-wa{background:#1f9d55;color:#fff}#mh-x{background:#fbeef2;color:#1f1a22}" +
+    "#mh-btn{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));right:10px;z-index:20;border:0;border-radius:999px;padding:6px 11px;font:800 13px system-ui,sans-serif;background:#fff;color:#b4506f;box-shadow:0 3px 10px rgba(0,0,0,.15);cursor:pointer}" +
+    "@media (prefers-color-scheme:dark){#mh-b{background:#271a22;color:#efe8ee}#mh-b details{border-color:#43303a}#mh-x{background:#43303a;color:#efe8ee}#mh-btn{background:#271a22;color:#efe8ee}}";
   var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
 
   function seen(k) { try { return !!localStorage.getItem("medij-astuce-" + k); } catch (e) { return true; } }
@@ -101,7 +101,7 @@
     o = document.createElement("div"); o.id = "mh-o";
     o.innerHTML = '<div id="mh-b" role="dialog" aria-modal="true" aria-label="Aide"><h2>❓ Comment faire ?</h2>' +
       FAQ.map(function (f) { return "<details><summary>" + f[0] + "</summary><p>" + f[1] + "</p></details>"; }).join("") +
-      '<button class="bt" id="mh-guide" style="background:#dbece5;color:#10243a">📖 Revoir le guide complet</button>' +
+      '<button class="bt" id="mh-guide" style="background:#f9dde6;color:#b4506f">📖 Revoir le guide complet</button>' +
       '<a class="bt" id="mh-wa" target="_blank" rel="noopener" href="' + WA + '">💬 Poser une question à Mariame</a>' +
       '<button class="bt" id="mh-x">Fermer</button></div>';
     document.body.appendChild(o);
