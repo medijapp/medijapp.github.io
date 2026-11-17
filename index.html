@@ -18,7 +18,7 @@
 <script src="data.js"></script>
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
-<script>window.__BUILD="20261117151500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261117151800";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -577,7 +577,7 @@ async function boot(){
     try{
       const snap=await db.collection("decks").limit(1000).get();
       S.decks=snap.docs.filter(x=>x.exists).map(x=>({...clone(x.data()),id:x.id}));
-      S.mode="db"; S.syncMsg="Enregistré sur cet appareil";
+      S.mode="db"; S.syncMsg="Enregistré ✓";
       liveSync();
     }catch(e){ db=null }
   }
@@ -585,7 +585,7 @@ async function boot(){
     S.mode="local";
     let saved=null; try{saved=JSON.parse(localStorage.getItem(LS_KEY)||"null")}catch(e){}
     S.decks=Array.isArray(saved)?saved:clone(DEMO);
-    S.syncMsg="Enregistré sur cet appareil";
+    S.syncMsg="Enregistré ✓";
   }
   try{const r=JSON.parse(localStorage.getItem(LS_RECENT)||"null");if(Array.isArray(r))S.recent=r}catch(e){}
   sortDecks(); render();
@@ -658,7 +658,7 @@ async function flush(){
       if(d){const body=clone(d);delete body.id;await db.doc("decks/"+id).set(body)}
       else await db.doc("decks/"+id).delete();
     }
-    setSync("Enregistré sur cet appareil");
+    setSync("Enregistré ✓");
   }catch(e){
     ids.forEach(i=>S.dirty.add(i));
     setSync(e?.code==="quota_exceeded"?"Espace plein : supprime un chapitre":"Non enregistré, nouvel essai…");
@@ -1011,7 +1011,7 @@ function tabFiche(d){
 function tabSource(d){
   if(!S.srcLoaded)return `<div class="empty">Chargement du cours source…</div>`;
   const s=S.src.get(d.id);
-  if(!s||!s.text)return `<div class="empty"><h3>Cours source non importé</h3><p>Le texte original de ce cours n'est pas encore enregistré dans le site. Tu peux le coller dans l'onglet Modifier, ou demander à Claude de l'importer depuis ton Drive.</p>${d.source?`<p class="help">Fichier d'origine : ${esc(d.source)}</p>`:""}<button class="btn soft small" data-act="tab" data-t="edit">Coller le cours</button></div>`;
+  if(!s||!s.text)return `<div class="empty"><h3>Cours source non importé</h3><p>Le texte original de ce cours n'est pas encore enregistré dans le site. Tu peux le coller dans l'onglet Modifier, ou l'importer depuis l'onglet En classe.</p>${d.source?`<p class="help">Fichier d'origine : ${esc(d.source)}</p>`:""}<button class="btn soft small" data-act="tab" data-t="edit">Coller le cours</button></div>`;
   const ch=srcChunks(s.text);
   return `<div class="panel stack" style="margin-bottom:14px"><div class="label">Cours original</div><div><strong>${esc(s.file||d.source||d.name)}</strong></div>
     <p class="help">Texte extrait du fichier ${s.origin?esc(s.origin):"de ton Drive"}${s.updatedAt?" le "+fmtDate(s.updatedAt):""}. Les diapositives composées uniquement d'images n'apparaissent pas ici${s.note?" · "+esc(s.note):""}.</p></div>
@@ -1259,9 +1259,9 @@ const jac=(a,b)=>{const A=new Set(a.split(" ").filter(w=>w.length>2)),B=new Set(
 const fmtMin=m=>{m=Math.round(m||0);return m<60?m+" min":Math.floor(m/60)+" h"+(m%60?" "+String(m%60).padStart(2,"0"):"")};
 const mondayOf=s=>addDays(s,1-wdOf(s));
 function loadScript(src){return new Promise((ok,ko)=>{if(document.querySelector(`script[src="${src}"]`)){ok();return}const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>ko(new Error("chargement impossible : "+src));document.head.appendChild(s)})}
-function aiErr(e){const c=e?.code;return ({not_granted:"Accès à Claude refusé pour cette page.",rate_limited:"Trop de demandes pour l'instant : réessaie dans un moment.",sampling_disabled:"Claude n'est pas disponible sur ce compte.",prompt_too_large:"Texte trop long : découpe le cours en plusieurs parties.",invalid_json:"Réponse illisible : réessaie.",images_unavailable:"La lecture d'images n'est pas disponible ici.",image_rejected:"Image refusée (format ou taille).",refused:"Claude a refusé cette demande.",cancelled:"Arrêté.",session_expired:"Reconnecte-toi à Claude.",empty_completion:"Réponse vide : réessaie."})[c]||((e?.message&&(!c||c==="not_granted_key"||window.__STATIC))?String(e.message):"Erreur de connexion : réessaie.")}
+function aiErr(e){const c=e?.code;return ({not_granted:"Accès à l'IA refusé : vérifie que ton compte est validé.",rate_limited:"Trop de demandes pour l'instant : réessaie dans un moment.",sampling_disabled:"L'IA n'est pas disponible pour le moment.",prompt_too_large:"Texte trop long : découpe le cours en plusieurs parties.",invalid_json:"Réponse illisible : réessaie.",images_unavailable:"La lecture d'images n'est pas disponible ici.",image_rejected:"Image refusée (format ou taille).",refused:"L'IA a refusé cette demande.",cancelled:"Arrêté.",session_expired:"Reconnecte-toi à ton compte MédiJ.",empty_completion:"Réponse vide : réessaie."})[c]||((e?.message&&(!c||c==="not_granted_key"||window.__STATIC))?String(e.message):"Erreur de connexion : réessaie.")}
 const aiOK=()=>!!SAMPLE;
-const noAI=window.__STATIC?`<p class="help">Pour les fonctions IA (explications, scans, génération), active l'IA gratuite dans l'Assistant. <button class="btn soft small" data-act="nav" data-v="assist">Activer l'IA</button></p>`:`<p class="help">Les fonctions Claude (explications, import de scans, génération) fonctionnent quand le site est ouvert dans Claude.</p>`;
+const noAI=window.__STATIC?`<p class="help">Pour les fonctions IA (explications, scans, génération), active l'IA gratuite dans l'Assistant. <button class="btn soft small" data-act="nav" data-v="assist">Activer l'IA</button></p>`:`<p class="help">L'IA de MédiJ n'est pas disponible pour le moment.</p>`;
 
 /* ---------- chargement / enregistrement ---------- */
 async function bootExtras(){
@@ -1394,7 +1394,7 @@ function prenom(){try{const v=localStorage.getItem("medij-prenom");if(v!=null)re
 function onboard(){const o=$("#overlay");if(!o)return;
   o.innerHTML=`<div class="sheet"><div class="box"><h3>Bienvenue sur MédiJ 🩺</h3>
   <p class="help">Ajoute tes propres cours (PDF, PowerPoint, Word ou photos) : MédiJ les transforme en fiches, flashcards et QCM, puis te dit chaque jour quoi réviser grâce à la méthode des J (J1, J3, J7, J15, J30).</p>
-  <p class="help">Ta progression et ton planning restent à toi, enregistrés sur cet appareil.</p>
+  <p class="help">Ta progression et ton planning restent à toi, enregistrés dans ton compte.</p>
   <label class="f">Ton prénom<input type="text" id="ob-name" autocomplete="given-name" placeholder="ex. Awa"></label>
   <label class="f">Ta filière<select id="ob-fil"><option value="">Choisis…</option>${filOpts(filiere())}</select></label>
   <label class="f">Ton année d'études<select id="ob-year"><option value="">Choisis…</option>${[1,2,3,4,5,6,7].map(y=>`<option value="${y}">${y===1?"1re":y+"e"} année (${y<=3?"L"+y:y<=5?"M"+(y-3):"D"+(y-5)})</option>`).join("")}</select></label>
@@ -1410,6 +1410,7 @@ const PDFJS="https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/legacy/build/pdf.mi
 let PDFL=null;
 async function pdfLib(){if(PDFL)return PDFL;try{globalThis.pdfjsWorker=await import(PDFW);const L=await import(PDFJS);L.GlobalWorkerOptions.workerSrc=PDFW;PDFL=L;return L}catch(e){throw {message:"Lecteur PDF indisponible sur cet appareil ou ce navigateur."}}}
 async function renderPage(pg,maxSide,q){const vp=pg.getViewport({scale:1});const sc=Math.min(2,maxSide/Math.max(vp.width,vp.height));const v2=pg.getViewport({scale:sc});const cv=document.createElement("canvas");cv.width=Math.round(v2.width);cv.height=Math.round(v2.height);const ctx=cv.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,cv.width,cv.height);await pg.render({canvas:cv,canvasContext:ctx,viewport:v2}).promise;return canvasBlob(cv,q)}
+const fixName=n=>{n=String(n||"");if(/[ÃÂ][\u0080-\u00bf]|Ã./.test(n)){try{return decodeURIComponent(escape(n))}catch(e){}}return n};
 const kindOf=f=>{const n=f.name.toLowerCase();if(n.endsWith(".pdf")||f.type==="application/pdf")return "pdf";if(n.endsWith(".pptx"))return "pptx";if(n.endsWith(".ppt"))return "ppt";if(n.endsWith(".docx"))return "docx";if(/^image\//.test(f.type)||/\.(jpe?g|png|webp|gif|heic)$/.test(n))return "image";if(/\.(txt|md|csv)$/.test(n)||/^text\//.test(f.type))return "text";return "autre"};
 function canvasBlob(cv,q=.82){return new Promise(r=>cv.toBlob(b=>r(b),"image/jpeg",q))}
 function impRefresh(){const el=document.getElementById("imp-box");if(el)el.innerHTML=impInner();else if(S.view==="classe"||S.view==="plan")render()}
@@ -1419,7 +1420,7 @@ async function readFiles(files,purpose){
   X.imp=X.imp&&X.imp.purpose===purpose?X.imp:{purpose,files:[],text:"",busy:false};
   const imp=X.imp;imp.busy=true;
   for(const file of files){
-    const f={name:file.name,kind:kindOf(file),size:file.size,file,status:"En attente",pages:[],text:""};imp.files.push(f);impRefresh();
+    const f={name:fixName(file.name),kind:kindOf(file),size:file.size,file,status:"En attente",pages:[],text:""};imp.files.push(f);impRefresh();
     try{
       if(f.kind==="pdf")await readPdf(f);
       else if(f.kind==="pptx")await readPptx(f);
@@ -1475,7 +1476,7 @@ async function readDocx(f){
 }
 async function ocrPages(f){
   const todo=f.pages.filter(p=>p.needOcr&&p.blob);if(!todo.length)return;
-  if(!SAMPLE||!SLIM?.images){f.status=`${todo.length} page(s) scannée(s) : lecture impossible ici (ouvre le site dans Claude).`;return}
+  if(!SAMPLE||!SLIM?.images){f.status=`${todo.length} page(s) scannée(s) : lecture impossible pour le moment.`;return}
   const per=Math.max(1,Math.min(SLIM.images.maxCount||5,6));
   for(let i=0;i<todo.length;i+=per){const grp=todo.slice(i,i+per);
     impLog(f,`Lecture des pages scannées (OCR) ${i+1}–${i+grp.length} / ${todo.length}…`);
@@ -1506,7 +1507,7 @@ function impFigList(){const imp=X.imp;if(!imp)return [];return imp.files.flatMap
 function jobShow(title){X.job={title,lines:[],ctl:new AbortController(),done:false};jobRender();return X.job}
 function jobLog(m){if(!X.job)return;X.job.lines.push(m);jobRender()}
 function jobRender(){const o=$("#overlay");const j=X.job;if(!j){o.innerHTML="";return}
-  o.innerHTML=`<div class="sheet"><div class="box"><div class="label">Claude travaille</div><h3>${esc(j.title)}</h3><div class="stack" style="gap:4px;max-height:40vh;overflow:auto">${j.lines.map(l=>`<div class="help">${esc(l)}</div>`).join("")}</div>${j.done?`<button class="btn" data-act="jobclose">Fermer</button>`:`<div class="row"><span class="spin" aria-hidden="true"></span><span class="help">Cela peut prendre quelques minutes pour un long cours.</span></div><button class="btn ghost" data-act="jobstop">Arrêter</button>`}</div></div>`}
+  o.innerHTML=`<div class="sheet"><div class="box"><div class="label">MédiJ travaille</div><h3>${esc(j.title)}</h3><div class="stack" style="gap:4px;max-height:40vh;overflow:auto">${j.lines.map(l=>`<div class="help">${esc(l)}</div>`).join("")}</div>${j.done?`<button class="btn" data-act="jobclose">Fermer</button>`:`<div class="row"><span class="spin" aria-hidden="true"></span><span class="help">Cela peut prendre quelques minutes pour un long cours.</span></div><button class="btn ghost" data-act="jobstop">Arrêter</button>`}</div></div>`}
 function chunksOf(text,max){const out=[];let cur="";for(const l of text.split("\n")){if(cur.length+l.length>max&&cur){out.push(cur);cur=""}cur+=l+"\n"}if(cur.trim())out.push(cur);return out}
 async function genChapter(d,text,figs){
   const job=jobShow("Fiche, flashcards et QCM · "+d.name);const signal=job.ctl.signal;
@@ -1592,9 +1593,9 @@ function viewClasseForm(){
   <div class="panel stack"><div class="label">Compréhension</div>
     <div class="chips">${[1,2,3,4,5].map(n=>`<button class="chip" data-act="ccomp" data-n="${n}" aria-pressed="${f.comp===n}">${n} · ${["","Rien compris","Difficile","Moyen","Bien","Très clair"][n]}</button>`).join("")}</div></div>
   <div class="panel stack"><div class="label">Supports du cours</div>
-    ${(f.supports||[]).length?`<div class="stack" style="gap:6px">${f.supports.map((s,i)=>`<div class="mini"><span>${s.id?`<a href="/_blob/${esc(s.id)}" target="_blank" rel="noopener">${esc(s.name)}</a>`:esc(s.name)} <span class="muted">· ${esc(s.kind||"")}</span></span><button class="btn ghost small" data-act="csupdel" data-i="${i}">Retirer</button></div>`).join("")}</div>`:""}
+    ${(f.supports||[]).length?`<div class="stack" style="gap:6px">${f.supports.map((s,i)=>`<div class="mini"><span>${s.id?`<a href="/_blob/${esc(s.id)}" target="_blank" rel="noopener">${esc(fixName(s.name))}</a>`:esc(fixName(s.name))} <span class="muted">· ${esc(s.kind||"")}</span></span><button class="btn ghost small" data-act="csupdel" data-i="${i}">Retirer</button></div>`).join("")}</div>`:""}
     <label class="btn soft" style="align-self:flex-start">Ajouter PDF, PowerPoint, Word, photos ou texte<input type="file" id="cf-files" multiple accept=".pdf,.pptx,.ppt,.docx,.txt,.md,image/*" hidden></label>
-    <p class="help">Les PDF scannés et les photos sont lus par Claude (OCR). Les fichiers PDF et images sont gardés comme supports ; un PowerPoint ou un Word est lu, son texte est gardé.</p>
+    <p class="help">Les PDF scannés et les photos sont lus automatiquement. Les fichiers PDF et images sont gardés comme supports ; un PowerPoint ou un Word est lu, son texte est gardé.</p>
     <div id="imp-box">${impInner()}</div>
   </div>
   <div class="row" style="position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--bg);padding-block:10px"><button class="btn" data-act="csave" style="flex:1">Enregistrer</button><button class="btn ghost" data-act="ccancel">Annuler</button></div>
@@ -1673,7 +1674,7 @@ function tabExplain(d){
   const ex=d.explain,busy=X.ai["exp-"+d.id];
   const qa=X.ask[d.id]||[];
   return `<div class="panel stack" style="margin-bottom:14px"><div class="label">Comprendre le cours</div>
-    <p class="help">Claude explique le chapitre partie par partie, à partir de ton cours, de la fiche et des notes du prof, avec un schéma quand une relation s'y prête. Ce qui ne vient pas du cours est signalé « hors cours ».</p>
+    <p class="help">MédiJ explique le chapitre partie par partie, à partir de ton cours, de la fiche et des notes du prof, avec un schéma quand une relation s'y prête. Ce qui ne vient pas du cours est signalé « hors cours ».</p>
     ${aiOK()?`<div class="row"><button class="btn" data-act="explain" ${busy?"disabled":""}>${busy?"Explication en cours…":ex?"Réexpliquer":"Explique-moi ce cours"}</button>${busy?`<span class="spin" aria-hidden="true"></span>`:""}</div>`:noAI}</div>
   ${ex?`<div class="stack">${ex.intro?`<div class="panel fiche"><p>${esc(ex.intro)}</p></div>`:""}
     ${(ex.sections||[]).map(s=>`<div class="panel fiche stack" style="gap:6px"><h3>${esc(s.titre||"")}</h3>${s.idee?`<div class="expl"><strong>L'idée clé :</strong> ${esc(s.idee)}</div>`:""}${md(s.explication||"")}
@@ -2089,7 +2090,7 @@ function planWeek(){
 function planEdt(){
   const P=X.planning,e=X.edt;
   return `<div class="panel stack" style="margin-bottom:14px"><div class="label">Importer mon emploi du temps</div>
-    <p class="help">Photo, capture, PDF ou texte de l'emploi du temps universitaire. Claude le lit et te montre les cours trouvés avant de les enregistrer.</p>
+    <p class="help">Photo, capture, PDF ou texte de l'emploi du temps universitaire. MédiJ le lit et te montre les cours trouvés avant de les enregistrer.</p>
     ${aiOK()?`<label class="btn soft" style="align-self:flex-start">Choisir un fichier<input type="file" id="edt-file" accept=".pdf,image/*,.txt" hidden></label>
     <textarea id="edt-text" rows="3" placeholder="…ou colle le texte ici (ex. Lundi 14h-16h Sémiologie digestive, amphi B)"></textarea><button class="btn ghost small" data-act="edttext" style="align-self:flex-start">Lire ce texte</button>`:noAI}
     ${e?.busy?`<div class="row"><span class="spin"></span><span class="help">${esc(e.msg||"Lecture…")}</span></div>`:""}
@@ -2114,7 +2115,7 @@ function planRules(){
   return `<div class="section"><h2>Méthode de révision</h2><button class="mini" data-act="nav" data-v="methode"><span><strong>📊 Méthode Major</strong><br><span class="muted">Durées calculées selon le nombre de cours et de diapos de chaque jour</span></span><span class="pill">Voir</span></button></div>
   ${calRules()}
   <div class="section"><h2>Apparence</h2><div class="panel stack"><div class="chips">${[["light","☀️ Clair"],["dark","🌙 Sombre"],["auto","Comme mon téléphone"]].map(([k,l])=>`<button class="chip" data-act="themeset" data-t="${k}" aria-pressed="${themePref()===k}">${l}</button>`).join("")}</div></div></div>
-  <div class="section"><h2>Profil</h2><div class="panel stack"><label class="f">Ton prénom<input type="text" id="pf-name" value="${esc(prenom())}" autocomplete="given-name"></label><label class="f">Ta filière<select id="pf-fil"><option value="">Choisis…</option>${filOpts(filiere())}</select></label><button class="btn soft small" data-act="namesave" style="align-self:flex-start">Enregistrer</button><p class="help">${window.__STATIC?"Ta progression, tes coches et ton planning restent sur ton appareil : chaque personne qui utilise le lien a son propre suivi.":"Affiché sur l'accueil."}</p></div></div>
+  <div class="section"><h2>Profil</h2><div class="panel stack"><label class="f">Ton prénom<input type="text" id="pf-name" value="${esc(prenom())}" autocomplete="given-name"></label><label class="f">Ta filière<select id="pf-fil"><option value="">Choisis…</option>${filOpts(filiere())}</select></label><button class="btn soft small" data-act="namesave" style="align-self:flex-start">Enregistrer</button><p class="help">${window.__STATIC?"Ta progression, tes coches et ton planning sont enregistrés dans ton compte : chaque personne a son propre suivi.":"Affiché sur l'accueil."}</p></div></div>
   <div class="section"><h2>Semestre</h2><div class="panel stack"><label class="f">Lundi de la semaine 1<input type="date" id="sem-start" value="${esc(P.semStart||"")}"></label><button class="btn soft small" data-act="semsave" style="align-self:flex-start">Enregistrer</button><p class="help">Sert à numéroter tes semaines (Semaine 1, 2, 3…) dans l'accueil et le planning.</p></div></div>
   <div class="section"><h2>Habitudes</h2>${(P.habits||[]).map(x=>row(x,"habits")).join("")||`<p class="help">Sommeil, repas, prière, sport, trajet… tout ce qui revient chaque semaine.</p>`}${itemForm("habits")}</div>
   <div class="section"><h2>Obligations</h2>${(P.obligations||[]).map(x=>row(x,"obligations")).join("")||`<p class="help">Rendez-vous et engagements ponctuels.</p>`}${itemForm("obligations")}</div>
@@ -2305,6 +2306,7 @@ function scrollChat(){requestAnimationFrame(()=>{const el=document.getElementByI
 /* Réglage d'une IA pour la version hors Claude (Netlify) */
 function aiSetupBox(){
   if(!window.__STATIC)return `<div class="panel">${noAI}</div>`;
+  if(window.__MEDIJ_CLOUD&&window.__MEDIJ_CLOUD.sb)return "";
   const g=k=>{try{return localStorage.getItem(k)||""}catch(e){return ""}};
   const gk=g("medij-ai-key"),ck=g("medij-claude-key"),pv=g("medij-ai-provider")||(ck&&!gk?"claude":"gemini");
   const active=aiOK();
@@ -2429,7 +2431,7 @@ async function auStart(mode){
   if(mode==="fiche"){a.parts=auFicheParts(d);a.total=a.parts.length;auPlay();return}
   const sig=auSig(d);
   if(d.audio&&d.audio.sig===sig&&d.audio.parts?.length&&d.audio.done){a.parts=d.audio.parts.slice();a.total=a.parts.length;auPlay();return}
-  if(!aiOK()){a.mode=null;a.err=window.__STATIC?"L'explication orale a besoin de l'IA : active-la dans l'onglet Assistant (clé Gemini ou Claude). Tu peux déjà écouter la fiche telle quelle.":"L'IA n'est pas disponible ici. Tu peux écouter la fiche telle quelle.";auBar();return}
+  if(!aiOK()){a.mode=null;a.err=window.__STATIC?"L'explication orale a besoin de l'IA : elle n'est pas disponible pour le moment. Tu peux déjà écouter la fiche telle quelle.":"L'IA n'est pas disponible ici. Tu peux écouter la fiche telle quelle.";auBar();return}
   const groups=auGroups(d);a.parts=[];a.total=groups.length;a.busy=true;a.gen=0;auBar();
   const myRun=a.run=Math.random();
   let started=false;
@@ -2570,7 +2572,7 @@ function notifSheet(){
   o.innerHTML=`<div class="sheet" data-act="ntclose"><div class="box"><h3>🔔 Rappels de mes tâches</h3>
     <p class="help">Le plus fiable : ajouter ton programme à l'app <strong>Calendrier</strong> de ton téléphone. Elle te prévient pour chaque tâche (cours, révision), même quand l'application est fermée.</p>
     <label class="f">Me prévenir<select id="nt-alarm">${[[0,"à l'heure exacte"],[5,"5 min avant"],[10,"10 min avant"],[15,"15 min avant"],[30,"30 min avant"]].map(([v,l])=>`<option value="${v}" ${v===al?"selected":""}>${l}</option>`).join("")}</select></label>
-    ${window.__STATIC?`<div class="row"><button class="btn" data-act="icsgo" data-s="week">Ajouter les 7 prochains jours</button><button class="btn soft" data-act="icsgo" data-s="day">Seulement ce jour</button></div>`:`<div class="callout">Cette version (dans Claude) ne peut pas créer de fichier calendrier. Ouvre ton application <strong>MédiJ</strong> installée sur ton téléphone, puis 🔔 Rappels : tout ton planning y est.</div>`}
+    ${window.__STATIC?`<div class="row"><button class="btn" data-act="icsgo" data-s="week">Ajouter les 7 prochains jours</button><button class="btn soft" data-act="icsgo" data-s="day">Seulement ce jour</button></div>`:`<div class="callout">Cette version ne peut pas créer de fichier calendrier. Ouvre ton application <strong>MédiJ</strong> installée sur ton téléphone, puis 🔔 Rappels : tout ton planning y est.</div>`}
     <p class="help">Sur iPhone/iPad : ouvre le fichier puis touche « Tout ajouter ». Refais-le chaque lundi (ou après un gros changement du planning) ; si tu le refais pour les mêmes jours, supprime d'abord l'ancien calendrier « MédiJ » pour éviter les doublons.</p>
     ${can?`<div class="panel stack" style="padding:12px"><strong>Notifications de l'application</strong><p class="help" style="margin:0">Quand l'application est ouverte (ou installée sur l'écran d'accueil d'un iPhone récent), elle t'envoie aussi une notification au début de chaque tâche.</p>
       ${perm==="granted"?`<label class="step"><input type="checkbox" id="nt-on" ${NT.on!==false?"checked":""}><span>Activées</span></label>`:perm==="denied"?`<p class="help" style="margin:0">Notifications bloquées : autorise-les dans les réglages du navigateur.</p>`:`<button class="btn soft small" data-act="ntperm" style="align-self:flex-start">Autoriser les notifications</button>`}</div>`:""}
@@ -2803,7 +2805,7 @@ function lessonView(d,L){
 function tabSimple(d){
   const sp=d.simple,S2=(sp&&sp.sections)||[];
   const intro=`<div class="panel stack" style="margin-bottom:10px"><div class="label">Le cours simplifié</div></div>`;
-  if(!S2.length)return intro+`<div class="panel"><p class="help" style="margin:0">Pas encore de cours simplifié pour ce chapitre. Demande-le à Claude dans la conversation, ou va dans Visuel pour le générer.</p></div>`;
+  if(!S2.length)return intro+`<div class="panel"><p class="help" style="margin:0">Pas encore de cours simplifié pour ce chapitre. Va dans Visuel pour le générer.</p></div>`;
   const all=(X.spAll??={})[d.id],i=Math.max(0,Math.min(S2.length-1,+((X.spP??={})[d.id]||0)));
   const one=s=>`<div class="simp">${s.g?`<div class="label">${esc(s.g)}</div>`:""}<h3>${esc(s.titre||"")}</h3><div class="fiche">${md(s.simple||"")}</div>${s.image?`<div class="simp-img"><strong>Pour se représenter :</strong> ${esc(s.image)}</div>`:""}${(s.retenir||[]).length?`<div class="label" style="margin-top:10px">À retenir</div><ul class="simp-ret">${s.retenir.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}</div>`;
   if(all)return intro+`<div class="panel stack" style="margin-bottom:10px"><button class="linkbtn" data-act="spall" style="align-self:flex-start">Revenir partie par partie</button></div><div class="panel stack">${S2.map(one).join("")}</div>`;
@@ -2830,7 +2832,7 @@ function tabLessonTop(d){
   const N=tuNotions(d),mode=(X.tuMode??={})[d.id]||(N.length?"tu":"read");
   const sw=`<div class="seg tu-seg" style="margin-bottom:12px"><button aria-selected="${mode==="tu"}" data-act="tumode" data-v="tu">🧠 Comprendre pas à pas</button><button aria-selected="${mode==="read"}" data-act="tumode" data-v="read">📖 Lire le cours expliqué</button></div>`;
   if(mode!=="tu")return sw+tabLesson(d);
-  if(!N.length)return sw+`<div class="panel stack"><div class="label">Comprendre pas à pas</div><p class="help" style="margin:0">Ce cours n'a pas encore de parcours « notion par notion ». Demande-le à Claude dans la conversation${aiOK()?", ou génère-le ici à partir de ta fiche":""}.</p>${aiOK()?`<button class="btn" data-act="tugen" ${X.ai["tug-"+d.id]?"disabled":""} style="align-self:flex-start">${X.ai["tug-"+d.id]?`Préparation… ${X.ai["tugp-"+d.id]||""}`:"Préparer le parcours avec l'IA"}</button>`:""}</div>`;
+  if(!N.length)return sw+`<div class="panel stack"><div class="label">Comprendre pas à pas</div><p class="help" style="margin:0">Ce cours n'a pas encore de parcours « notion par notion ». Génère-le${aiOK()?", ou génère-le ici à partir de ta fiche":""}.</p>${aiOK()?`<button class="btn" data-act="tugen" ${X.ai["tug-"+d.id]?"disabled":""} style="align-self:flex-start">${X.ai["tug-"+d.id]?`Préparation… ${X.ai["tugp-"+d.id]||""}`:"Préparer le parcours avec l'IA"}</button>`:""}</div>`;
   return sw+tabTutor(d)}
 function tabTutor(d){
   const N=tuNotions(d),T=d.tutor,iRaw=(X.tuI??={})[d.id];

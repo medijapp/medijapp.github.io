@@ -80,6 +80,9 @@
   function button() {
     var b = document.getElementById("dj-btn"); if (!b) { b = el('<button id="dj-btn" type="button"></button>'); b.onclick = home; document.body.appendChild(b); }
     var s = st(), done = !!s.days[ymd()], k = streakNow(s);
+    var onHome = function () { var h = document.querySelector('#tabbar button[data-v="home"]'); return !h || h.getAttribute("aria-current") === "page"; };
+    b.style.display = onHome() ? "" : "none";
+    if (!b._obs) { var tb = document.getElementById("tabbar"); if (tb && window.MutationObserver) { b._obs = new MutationObserver(function () { b.style.display = onHome() ? "" : "none"; }); b._obs.observe(tb, { childList: true, subtree: true, attributes: true }); } }
     b.className = done ? "done" : ""; b.textContent = done ? "✅ Défi fait" + (k ? " · 🔥 " + k : "") : "🎯 Défi du jour" + (k ? " · 🔥 " + k : "");
   }
   function badgesHtml(s) {
