@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118175500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118181000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1422,7 +1422,18 @@ function curTheme(){const p=themePref();return p==="auto"?(matchMedia("(prefers-
 /* ---------- Importation : PDF, PowerPoint, Word, photos, texte (+ OCR par Claude) ---------- */
 const PDFJS="https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/legacy/build/pdf.min.mjs",PDFW="https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/legacy/build/pdf.worker.min.mjs",JSZIP="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 let PDFL=null;
-async function pdfLib(){if(PDFL)return PDFL;try{globalThis.pdfjsWorker=await import(PDFW);const L=await import(PDFJS);L.GlobalWorkerOptions.workerSrc=PDFW;PDFL=L;return L}catch(e){throw {message:"Lecteur PDF indisponible sur cet appareil ou ce navigateur."}}}
+const withTO=(pr,ms,msg)=>new Promise((ok,ko)=>{const t=setTimeout(()=>ko({message:msg}),ms);Promise.resolve(pr).then(v=>{clearTimeout(t);ok(v)},e=>{clearTimeout(t);ko(e)})});
+let PDFMODE="";
+async function pdfLib(){if(PDFL)return PDFL;try{const L=await withTO(import(PDFJS),60000,"Le lecteur PDF met trop de temps à se charger : vérifie ta connexion internet puis réessaie.");
+    try{const w=new Worker(URL.createObjectURL(new Blob([`import "${PDFW}";`],{type:"text/javascript"})),{type:"module"});L.GlobalWorkerOptions.workerPort=w;PDFMODE="worker"}catch(e){globalThis.pdfjsWorker=await withTO(import(PDFW),60000,"Le lecteur PDF met trop de temps à se charger.");L.GlobalWorkerOptions.workerSrc=PDFW;PDFMODE="main"}
+    PDFL=L;return L}catch(e){throw {message:e?.message||"Lecteur PDF indisponible sur cet appareil ou ce navigateur."}}}
+/* ouvre un PDF ; si le lecteur en arrière-plan ne répond pas, repasse en lecture directe */
+async function openPdf(data){const L=await pdfLib();
+  try{return await withTO(L.getDocument({data:data.slice(0)}).promise,PDFMODE==="worker"?25000:90000,"Ouverture du PDF trop longue")}
+  catch(e){if(PDFMODE!=="worker")throw {message:"Impossible d'ouvrir ce PDF (fichier trop lourd ou abîmé). Essaie un PDF plus léger ou des captures d'écran."};
+    try{L.GlobalWorkerOptions.workerPort?.terminate?.()}catch(_){}L.GlobalWorkerOptions.workerPort=null;
+    globalThis.pdfjsWorker=await withTO(import(PDFW),60000,"Le lecteur PDF met trop de temps à se charger.");L.GlobalWorkerOptions.workerSrc=PDFW;PDFMODE="main";
+    return await withTO(L.getDocument({data:data.slice(0)}).promise,90000,"Impossible d'ouvrir ce PDF (fichier trop lourd ou abîmé). Essaie un PDF plus léger ou des captures d'écran.")}}
 async function renderPage(pg,maxSide,q){const vp=pg.getViewport({scale:1});const sc=Math.min(2,maxSide/Math.max(vp.width,vp.height));const v2=pg.getViewport({scale:sc});const cv=document.createElement("canvas");cv.width=Math.round(v2.width);cv.height=Math.round(v2.height);const ctx=cv.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,cv.width,cv.height);await pg.render({canvas:cv,canvasContext:ctx,viewport:v2}).promise;return canvasBlob(cv,q)}
 const fixName=n=>{n=String(n||"");if(/[ÃÂ][\u0080-\u00bf]|Ã./.test(n)){try{return decodeURIComponent(escape(n))}catch(e){}}return n};
 const kindOf=f=>{const n=f.name.toLowerCase();if(n.endsWith(".pdf")||f.type==="application/pdf")return "pdf";if(n.endsWith(".pptx"))return "pptx";if(n.endsWith(".ppt"))return "ppt";if(n.endsWith(".docx"))return "docx";if(/^image\//.test(f.type)||/\.(jpe?g|png|webp|gif|heic)$/.test(n))return "image";if(/\.(txt|md|csv)$/.test(n)||/^text\//.test(f.type))return "text";return "autre"};
@@ -1452,18 +1463,21 @@ async function readFiles(files,purpose){
 }
 async function readPdf(f){
   impLog(f,"Ouverture du PDF…");
-  const L=await pdfLib();const pdf=await L.getDocument({data:await f.file.arrayBuffer()}).promise;
+  const pdf=await openPdf(new Uint8Array(await f.file.arrayBuffer()));
   for(let i=1;i<=pdf.numPages;i++){
     impLog(f,`Lecture page ${i}/${pdf.numPages}…`);
-    const pg=await pdf.getPage(i);const tc=await pg.getTextContent();
+    const pg=await withTO(pdf.getPage(i),30000,`La page ${i} ne se lit pas`);const tc=await withTO(pg.getTextContent(),30000,`La page ${i} ne se lit pas`);
     const text=tc.items.map(it=>it.str+(it.hasEOL?"\n":" ")).join("").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n");
-    const blob=await renderPage(pg,1400,.82);
-    f.pages.push({n:i,text,blob,thumb:URL.createObjectURL(blob),needOcr:text.replace(/\s/g,"").length<40});
+    const needOcr=text.replace(/\s/g,"").length<40;
+    let blob=null;try{blob=await withTO(renderPage(pg,needOcr?1400:1000,needOcr?.82:.72),30000,"rendu trop long")}catch(e){}
+    try{pg.cleanup()}catch(e){}
+    f.pages.push({n:i,text,blob,thumb:blob?URL.createObjectURL(blob):null,needOcr:needOcr&&!!blob});
+    if(i%3===0)await new Promise(r=>setTimeout(r,0));
   }
   if(f.pages.some(p=>p.needOcr))await ocrPages(f);else f.status=`${pdf.numPages} pages lues`;
 }
 async function readPptx(f){
-  impLog(f,"Ouverture du PowerPoint…");await loadScript(JSZIP);
+  impLog(f,"Ouverture du PowerPoint…");await withTO(loadScript(JSZIP),60000,"Le lecteur de fichiers met trop de temps à se charger : vérifie ta connexion internet.");
   const zip=await window.JSZip.loadAsync(await f.file.arrayBuffer());
   const num=n=>+n.match(/(\d+)\.xml$/)[1];
   const slides=Object.keys(zip.files).filter(n=>/^ppt\/slides\/slide\d+\.xml$/.test(n)).sort((a,b)=>num(a)-num(b));
@@ -1483,7 +1497,7 @@ async function readPptx(f){
   if(f.pages.some(p=>p.needOcr))await ocrPages(f);
 }
 async function readDocx(f){
-  impLog(f,"Ouverture du document Word…");await loadScript(JSZIP);
+  impLog(f,"Ouverture du document Word…");await withTO(loadScript(JSZIP),60000,"Le lecteur de fichiers met trop de temps à se charger : vérifie ta connexion internet.");
   const zip=await window.JSZip.loadAsync(await f.file.arrayBuffer());const x=zip.file("word/document.xml");if(!x)throw new Error("document vide");
   const doc=new DOMParser().parseFromString(await x.async("string"),"application/xml");
   f.text=[...doc.getElementsByTagNameNS("*","p")].map(p=>[...p.getElementsByTagNameNS("*","t")].map(t=>t.textContent).join("")).filter(s=>s.trim()).join("\n");f.status="Document lu";
@@ -2195,7 +2209,7 @@ async function edtImport(files,text){
     let images=[],txt=text||"";
     for(const f of files||[]){const k=kindOf(f);
       if(k==="image")images.push(f);
-      else if(k==="pdf"){const L=await pdfLib();const pdf=await L.getDocument({data:await f.arrayBuffer()}).promise;
+      else if(k==="pdf"){const pdf=await openPdf(new Uint8Array(await f.arrayBuffer()));
         for(let i=1;i<=Math.min(pdf.numPages,4);i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();txt+="\n"+tc.items.map(it=>it.str+(it.hasEOL?"\n":" ")).join("");
           images.push(await renderPage(pg,1800,.85))}}
       else txt+="\n"+await f.text()}
