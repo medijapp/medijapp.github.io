@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118192500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118193500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -611,7 +611,7 @@ async function loadSources(){
   }
   S.srcLoaded=true;S.idx=null;
   if(S.view==="search")renderResults();
-  else if(S.view==="deck"&&(S.tab==="source"||S.tab==="cov"))render();
+  else if(S.view==="deck")render();
 }
 async function saveSource(id,text){
   const prev=S.src.get(id)||{};
@@ -1010,6 +1010,7 @@ function tabFiche(d){
   ${methCard(d)}
   ${figs.length?`<div class="panel stack" style="margin-bottom:14px"><div class="label">Schémas · ${figs.length}</div><div class="chips">${figs.map((f,n)=>`<button class="chip" data-act="jump" data-anchor="fig-${n}">${esc(f.cap||"Schéma "+(n+1))}</button>`).join("")}</div></div>`:""}
   ${ficheExtras(d)}
+  ${!d.fiche?.trim()&&!(S.src.get(d.id)?.text||"").trim()&&!d.example?genBar(d,"fiche"):""}
   ${!d.fiche?.trim()&&(S.src.get(d.id)?.text||"").trim()?`<div class="row" style="margin-bottom:12px">${aiOK()?`<button class="btn small" data-act="genmore" data-w="fiche">✨ Fiche, flashcards et QCM avec l'IA</button>`:""}<button class="btn ghost small" data-act="genlocal2" data-w="fiche">⚡ Fiche des points clés sans IA</button></div>`:""}
   <div class="panel fiche">${d.fiche?.trim()?md(d.fiche):`<div class="empty">Pas encore de fiche. Écris-la dans l'onglet Modifier.</div>`}</div>`;
 }
@@ -1054,7 +1055,8 @@ function tabCov(d){
 }
 /* bouton « créer depuis le cours » en haut des flashcards et des QCM */
 function genBar(d,what){const sess=S.session&&S.session.deckId===d.id&&S.session.type===what;if(sess||d.example)return "";
-  const n=what==="qcm"?(d.qcm||[]).length:(d.cards||[]).length,hasSrc=!!(S.src.get(d.id)?.text||"").trim()||!!(d.fiche||"").trim();if(!hasSrc)return "";
+  const n=what==="qcm"?(d.qcm||[]).length:(d.cards||[]).length,hasSrc=!!(S.src.get(d.id)?.text||"").trim()||!!(d.fiche||"").trim();
+  if(!hasSrc)return S.srcLoaded?`<div class="panel stack" style="margin-bottom:12px"><strong>Ce chapitre n'a pas encore de cours</strong><p class="help" style="margin:0">Importe le cours (PDF, PowerPoint, Word ou photos) : MédiJ crée la fiche, les flashcards et les QCM à partir de lui.</p><button class="btn small" data-act="cnew" data-imp="1" data-deck="${d.id}" data-m="${esc(d.matiere&&d.matiere!=="Sans matière"?d.matiere:"")}" style="align-self:flex-start">📥 Importer le cours de ce chapitre</button></div>`:`<p class="help">Chargement du cours…</p>`;
   const lab=what==="qcm"?(n?"✨ Ajouter des QCM depuis le cours":"✨ Créer les QCM depuis le cours"):(n?"✨ Ajouter des flashcards depuis le cours":"✨ Créer les flashcards depuis le cours");
   const loc=`<button class="btn ghost small" data-act="genlocal2" data-w="${what}">⚡ ${what==="qcm"?"QCM":"Flashcards"} sans IA (illimité)</button>`;
   return `<div class="row" style="margin-bottom:12px">${aiOK()?`<button class="btn ${n?"ghost":""} small" data-act="genmore" data-w="${what}">${lab}</button>`:""}${loc}${!n&&aiOK()?`<span class="help">Basé uniquement sur ton cours.</span>`:""}</div>`}
@@ -3687,7 +3689,7 @@ document.addEventListener("click",async e=>{
     case "learned":if(d)markTaskDone(today(),"learn:"+d.id,true);break;
     case "endsession":break;
     /* En classe */
-    case "cnew":X.form={id:uid(),date:today(),type:"CM",matiere:b.dataset.m?(Object.keys(groupsByMat()).find(k=>fold(k).startsWith(fold(b.dataset.m)))||b.dataset.m):"",deckId:"",newName:"",notes:"",comp:null,supports:[],merge:true};X.imp=null;S.view="classe";render();window.scrollTo(0,0);if(b.dataset.imp)setTimeout(()=>$("#cf-files")?.click(),50);break;
+    case "cnew":X.form={id:uid(),date:today(),type:"CM",matiere:b.dataset.m?(Object.keys(groupsByMat()).find(k=>fold(k).startsWith(fold(b.dataset.m)))||b.dataset.m):"",deckId:b.dataset.deck&&getDeck(b.dataset.deck)?b.dataset.deck:"",newName:"",notes:"",comp:null,supports:[],merge:true};X.imp=null;S.view="classe";render();window.scrollTo(0,0);if(b.dataset.imp)setTimeout(()=>$("#cf-files")?.click(),50);break;
     case "cedit":{const x=X.classes.find(y=>y.id===b.dataset.id);if(x){X.form={...clone(x),newName:"",merge:false};X.imp=null;render();window.scrollTo(0,0)}break}
     case "ccancel":X.form=null;X.imp=null;render();window.scrollTo(0,0);break;
     case "csave":saveClasse();break;
