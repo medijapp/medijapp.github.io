@@ -69,6 +69,7 @@
     timer: { t: "Chrono", d: "Choisis un chapitre et lance le chronomètre pendant que tu révises. Ton temps de travail est compté dans tes statistiques." }
   };
   var FAQ = [
+    ["🎧 Comment réviser en écoutant ?", "Sur <strong>Aujourd'hui</strong>, le bloc <strong>🎧 Mode écoute</strong> lit tes révisions du jour à la suite. Dans un cours, touche <strong>🎧 Écouter le cours</strong>. Trois modes : <strong>Questions à l'oral</strong> (MédiJ pose la question, te laisse réfléchir puis donne la réponse), <strong>Explication</strong> du cours, ou <strong>Fiche</strong> lue telle quelle. Garde l'appli ouverte : l'écran reste allumé pendant l'écoute."],
     ["📥 Comment importer un cours ?", "<strong>Matières</strong> → <strong>📥 Importer un cours</strong> → choisis ton fichier → indique la matière et le titre → <strong>Créer la fiche, les flashcards et les QCM</strong>."],
     ["📝 Comment créer une fiche moi-même ?", "<strong>Matières</strong> → <strong>+ Chapitre</strong>, puis dans le chapitre, l'onglet <strong>Modifier</strong> pour écrire ta fiche, ajouter des flashcards ou des QCM."],
     ["🧩 Comment avoir des schémas de mon cours ?", "Ouvre un chapitre dans <strong>Matières</strong> → onglet <strong>Fiche</strong> : les schémas de ton cours y sont repris. Tu peux choisir les schémas à garder au moment de l'import."],

@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118190000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118193000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -939,6 +939,7 @@ function viewMatiere(){
   return topbar(S.mat,true)+`<div class="hero"><div class="label">Matière</div><h1>${esc(S.mat)}</h1>
     <div class="progress" style="margin-top:8px"><i style="width:${Math.round(done/all.length*100)}%"></i></div>
     <div class="help">${done} révisé${done>1?"s":""} · ${all.length-done} à réviser · ${all.length} au total</div></div>
+  ${TTS&&(groupsByMat()[S.mat]||[]).some(d=>(d.fiche||"").trim())?`<button class="mini" data-act="auqueue" data-m="quiz" data-mat="${esc(S.mat)}" style="margin-bottom:8px"><span><strong>🎧 Écouter cette matière</strong> <span class="muted">· questions à l'oral, cours après cours</span></span><span class="pill">▶</span></button>`:""}
   ${filCas()?`<button class="mini" data-act="casview" data-m="${esc(S.mat)}" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· cette matière</span></span><span class="pill">→</span></button>`:""}
   ${filMed()?`<button class="mini" data-act="synopen" data-m="${esc(S.mat)}" style="margin-bottom:12px"><span><strong>Syndromes et triades</strong> <span class="muted">· ${syndromes(S.mat).length} relevés dans les cours</span></span><span class="pill">→</span></button>`:""}
   <div class="chips" style="margin-bottom:14px">${[["all","Tous"],["todo","À réviser"],["done","Révisés"]].map(([k,l])=>`<button class="chip" data-act="mfilter" data-f="${k}" aria-pressed="${S.mf===k}">${l}</button>`).join("")}</div>
@@ -2229,6 +2230,12 @@ async function edtImport(files,text){
   render();
 }
 
+/* mode écoute depuis l'accueil : cours à revoir aujourd'hui (J dus ou en retard), sinon les derniers cours appris */
+function auHome(t){if(!TTS)return "";let L=S.decks.filter(d=>!d.example&&(d.fiche||"").trim()&&(()=>{const i=jInfo(d);return i.status==="due"||i.status==="late"})());
+  let lab="tes révisions du jour";if(!L.length){L=S.decks.filter(d=>!d.example&&(d.fiche||"").trim()&&d.learnedOn).sort((a,b)=>b.learnedOn.localeCompare(a.learnedOn)).slice(0,5);lab="tes derniers cours"}
+  if(!L.length)return "";const ids=L.slice(0,8).map(d=>d.id).join(",");
+  return `<div class="panel stack" style="margin-bottom:14px"><div class="label">🎧 Mode écoute · ${L.length>8?8:L.length} cours</div><p class="help" style="margin:0">Révise en marchant ou dans le bus : écoute ${lab} à la suite. L'écran reste allumé pendant l'écoute.</p>
+    <div class="row"><button class="btn small" data-act="auqueue" data-m="quiz" data-ids="${ids}">❓ Questions à l'oral</button><button class="btn soft small" data-act="auqueue" data-m="explain" data-ids="${ids}">🗣️ Explications</button><button class="btn ghost small" data-act="auqueue" data-m="fiche" data-ids="${ids}">📄 Fiches</button></div></div>`}
 /* ---------- Tableau de bord ---------- */
 function viewHome(){
   const t=today();
@@ -2257,7 +2264,7 @@ function viewHome(){
     </div></div>
   ${searchBox("hq","","Chercher un chapitre, une notion, un mot-clé…")}
   ${X.chrono?`<button class="mini" data-act="nav" data-v="timer" style="margin-bottom:14px;border-color:var(--scrub)"><span><strong>Séance en cours</strong> · ${esc(X.chrono.act?X.chrono.act.title:getDeck(X.chrono.deckId)?.name||"")}</span><span class="pill">${X.chrono.running?"en cours":"en pause"}</span></button>`:""}
-  ${calHome(t)}${avHome()}${loadLine(t)}<div class="section"><div class="row" style="justify-content:space-between"><h2>Ma journée</h2><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="iconbtn" data-act="themetog" aria-label="Changer de thème">${curTheme()==="dark"?"☀️":"🌙"}</button><button class="iconbtn" data-act="ntopen" aria-label="Rappels">🔔</button><button class="btn ghost small" data-act="nav" data-v="plan">Planning</button></span></div>
+  ${calHome(t)}${avHome()}${loadLine(t)}${auHome(t)}<div class="section"><div class="row" style="justify-content:space-between"><h2>Ma journée</h2><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="iconbtn" data-act="themetog" aria-label="Changer de thème">${curTheme()==="dark"?"☀️":"🌙"}</button><button class="iconbtn" data-act="ntopen" aria-label="Rappels">🔔</button><button class="btn ghost small" data-act="nav" data-v="plan">Planning</button></span></div>
     ${!X.loaded?`<div class="help">Chargement…</div>`:plan?`<p class="help">${done.length}/${plan.blocks.length+fx.length} fait${done.length>1?"s":""} · touche ✓ dès qu'une activité est faite.</p>${dayTimeline(t,plan,fx)}`:`<div class="empty">Ajoute ton emploi du temps dans Planning pour un programme sur mesure.</div>`}
     ${plan?.over?.length?`<p class="help">${plan.over.length} tâche(s) reportée(s) faute de temps libre aujourd'hui.</p>`:""}</div>
   <div class="section"><h2>Fait aujourd'hui</h2>
@@ -2436,6 +2443,7 @@ function auVoice(){return AU_VOICES.find(v=>v.voiceURI===AU_PREF.voice)||AU_VOIC
 function auSig(d){const s=(d.fiche||"")+"|"+(d.profNotes||"");let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h.toString(36)+":"+s.length}
 /* Découpe en phrases courtes (les navigateurs coupent les longues lectures) */
 function auSentences(t){
+  if(String(t||"").includes("\u0002")){return String(t).split("\u0002").flatMap((x,i)=>i?["\u0002",...auSentences(x)]:auSentences(x))}
   const out=[];String(t||"").replace(/\s+/g," ").replace(/([.!?…:;])\s+(?=[A-ZÀ-ÖØ-Þ0-9«(])/g,"$1\u0001").split("\u0001").forEach(s=>{s=s.trim();if(!s)return;
     while(s.length>230){let k=s.lastIndexOf(", ",230);if(k<80)k=s.lastIndexOf(" ",230);if(k<40)k=230;out.push(s.slice(0,k+1).trim());s=s.slice(k+1).trim()}
     if(s)out.push(s)});return out}
@@ -2457,6 +2465,22 @@ function auFicheParts(d){
   if(d.profNotes)parts.push({h:"Notes du professeur",text:"Notes du professeur. "+auFicheText(d.profNotes)});
   return parts}
 
+/* Questions à l'oral : objectifs / éléments importants puis flashcards ; un temps de réflexion avant chaque réponse */
+const AU_PAUSE="\u0002";
+const auSay=t=>String(t||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/\*\*|__|==|`|#+\s*/g,"").replace(/\n+/g,". ").replace(/^\s*[-•*]\s*/gm,"").trim();
+function auQuizParts(d){const P=[];
+  const O=(d.objectifs&&d.objectifs.length?d.objectifs:[]).filter(o=>o.obj&&o.reponse);
+  O.forEach((o,i)=>P.push({h:(o.imp?"Élément important ":"Objectif ")+(i+1),text:"Question. "+auSay(o.obj)+" "+AU_PAUSE+" Réponse. "+auSay(o.reponse)}));
+  (d.cards||[]).slice(0,60).forEach((c,i)=>{if(c.q&&c.a)P.push({h:"Flashcard "+(i+1),text:auSay(c.q)+" "+AU_PAUSE+" Réponse. "+auSay(c.a)})});
+  return P}
+let AU_WL=null;
+async function auWake(on){try{if(on&&!AU_WL&&navigator.wakeLock){AU_WL=await navigator.wakeLock.request("screen");AU_WL.addEventListener?.("release",()=>{AU_WL=null})}
+  else if(!on&&AU_WL){await AU_WL.release();AU_WL=null}}catch(e){AU_WL=null}}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&X.au?.playing)auWake(true)});
+/* mode écoute : plusieurs cours à la suite (révisions du jour ou une matière) */
+function auQueue(ids,mode){ids=ids.filter(id=>{const d=getDeck(id);return d&&(mode==="quiz"?auQuizParts(d).length:(d.fiche||"").trim())});
+  if(!ids.length){toast(mode==="quiz"?"Aucune question prête : prépare d'abord les flashcards ou les objectifs.":"Aucune fiche à écouter.");return}
+  auStop();X.au={deckId:ids[0],queue:ids.slice(1),qmode:mode,qn:ids.length,mode:null,parts:[],i:0,j:0,playing:false,busy:false,min:false,err:""};auStart(mode)}
 function auOpen(deckId){
   const d=getDeck(deckId);if(!d)return;
   if(X.au&&X.au.deckId===deckId){X.au.min=false;auBar();return}
@@ -2465,6 +2489,7 @@ function auOpen(deckId){
 async function auStart(mode){
   const a=X.au,d=a&&getDeck(a.deckId);if(!d)return;
   if(!TTS){a.err="La lecture vocale n'est pas disponible sur ce navigateur.";auBar();return}
+  if(mode==="quiz"){const P=auQuizParts(d);if(!P.length){a.err="Pas encore de questions pour ce cours : prépare les objectifs (dans la Fiche) ou les flashcards.";auBar();return}a.mode=mode;a.i=0;a.j=0;a.err="";a.parts=P;a.total=P.length;auPlay();return}
   if(!(d.fiche||"").trim()){a.err="Ce chapitre n'a pas encore de fiche à écouter.";auBar();return}
   a.mode=mode;a.i=0;a.j=0;a.err="";
   if(mode==="fiche"){a.parts=auFicheParts(d);a.total=a.parts.length;auPlay();return}
@@ -2513,7 +2538,11 @@ function auSpeak(){
   if(a.j>=ch.length){
     if(a.i<a.parts.length-1){a.i++;a.j=0;auBar();return auSpeak()}
     if(a.busy){a.waiting=true;auBar();return}     // la suite est en préparation
-    a.playing=false;a.i=0;a.j=0;a.ended=true;auBar();return}
+    if(a.queue&&a.queue.length){const nx=a.queue.shift(),nd=getDeck(nx);if(nd){const u2=new SpeechSynthesisUtterance("Cours suivant : "+nd.name+".");u2.lang="fr-FR";const v2=auVoice();if(v2)u2.voice=v2;
+      u2.onend=u2.onerror=()=>{if(X.au!==a)return;a.deckId=nx;auStart(a.qmode)};try{TTS.speak(u2)}catch(e){u2.onend()}auBar();return}}
+    a.playing=false;a.i=0;a.j=0;a.ended=true;auWake(false);auBar();return}
+  if(ch[a.j]==="\u0002"){const tok=a.tok=Math.random();const el=document.getElementById("au-now");if(el)el.textContent="🤔 Réfléchis à ta réponse…";
+    clearTimeout(a.wd);a.wd=setTimeout(()=>{if(X.au===a&&a.tok===tok&&a.playing){a.tok=0;a.j++;auSpeak()}},(+(AU_PREF.think||5))*1000);return}
   const u=new SpeechSynthesisUtterance(ch[a.j]);const v=auVoice();if(v){u.voice=v;u.lang=v.lang}else u.lang="fr-FR";u.volume=1;u.onstart=()=>{a.started=true};
   u.rate=+(AU_PREF.rate||.95);u.pitch=1;
   const tok=a.tok=Math.random();
@@ -2533,16 +2562,16 @@ function auTest(){if(!TTS){toast("La lecture vocale n'est pas disponible sur cet
   try{TTS.cancel()}catch(e){}const u=new SpeechSynthesisUtterance("Bonjour "+(prenom()||"")+", le son fonctionne.");u.lang="fr-FR";u.volume=1;const v=auVoice();if(v&&v.lang&&/^fr/i.test(v.lang))u.voice=v;
   let ok=false;u.onstart=()=>{ok=true};TTS.speak(u);
   setTimeout(()=>{if(!ok&&!TTS.speaking)toast("Toujours rien ? Vérifie le bouton silencieux, le volume et une voix française dans Réglages → Accessibilité → Contenu énoncé → Voix.")},2500)}
-function auPlay(){const a=X.au;if(!a||!TTS)return;a.ended=false;a.playing=true;auBar();
+function auPlay(){const a=X.au;if(!a||!TTS)return;a.ended=false;a.playing=true;auWake(true);auBar();
   try{if(TTS.speaking||TTS.pending)TTS.cancel();if(TTS.paused)TTS.resume()}catch(e){}
   auSpeak();  /* immédiat : obligatoire sur iPad/iPhone */
   /* si l'appareil a ignoré la première phrase (bug iOS après cancel), on relance une fois */
   const a2=X.au;setTimeout(()=>{if(X.au===a2&&a2.playing&&!a2.started){try{if(!TTS.speaking&&!TTS.pending){a2.tok=0;auSpeak()}}catch(e){}}},1200)}
-function auPause(){const a=X.au;if(!a)return;a.playing=false;a.tok=0;clearTimeout(a.wd);try{TTS.cancel()}catch(e){}auBar()}
+function auPause(){const a=X.au;if(!a)return;a.playing=false;auWake(false);a.tok=0;clearTimeout(a.wd);try{TTS.cancel()}catch(e){}auBar()}
 function auStop(){if(TTS)try{TTS.cancel()}catch(e){}if(X.au){X.au.playing=false;X.au.tok=0;X.au.run=0}}
 function auSeek(di){const a=X.au;if(!a)return;const was=a.playing;auPause();a.i=Math.max(0,Math.min(a.parts.length-1,a.i+di));a.j=0;if(was)auPlay();else auBar()}
 function auBack(){const a=X.au;if(!a)return;const was=a.playing;auPause();if(a.j>0)a.j=Math.max(0,a.j-2);else if(a.i>0){a.i--;a.j=Math.max(0,auChunks().length-2)}if(was)auPlay();else auBar()}
-function auHilite(){const el=document.getElementById("au-now");const a=X.au;if(!el||!a)return;const ch=auChunks();el.textContent=ch[a.j]||"";
+function auHilite(){const el=document.getElementById("au-now");const a=X.au;if(!el||!a)return;const ch=auChunks();el.textContent=ch[a.j]==="\u0002"?"🤔 Réfléchis à ta réponse…":(ch[a.j]||"");
   const t=document.getElementById("au-part");if(t)t.textContent=a.parts[a.i]?.h||"";
   const pr=document.getElementById("au-prog");if(pr){const n=a.parts.length||1;pr.style.width=Math.round(((a.i+(ch.length?a.j/ch.length:0))/Math.max(n,a.total||n))*100)+"%"}}
 function auBar(){
@@ -2554,10 +2583,11 @@ function auBar(){
   const ch=auChunks(),n=a.parts.length;
   const rate=+(AU_PREF.rate||1),v=auVoice();
   el.innerHTML=`<div class="aupanel" role="region" aria-label="Cours audio">
-    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div class="label">🎧 Cours audio${a.mode==="fiche"?" · fiche lue telle quelle":a.mode?" · explication du cours":""}</div><strong class="au-title">${esc(d.name)}</strong></div>
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div style="min-width:0"><div class="label">🎧 ${a.queue!=null?"Mode écoute ("+(a.qn-a.queue.length)+"/"+a.qn+")":"Cours audio"}${a.mode==="fiche"?" · fiche lue telle quelle":a.mode==="quiz"?" · questions à l'oral":a.mode?" · explication du cours":""}</div><strong class="au-title">${esc(d.name)}</strong></div>
       <div class="row" style="gap:6px;flex-wrap:nowrap"><button class="iconbtn" data-act="aumin" aria-label="Réduire">⌄</button><button class="iconbtn" data-act="auclose" aria-label="Fermer">✕</button></div></div>
     ${!a.mode?`<div class="stack" style="gap:8px">
         <button class="mini" data-act="aumode" data-m="explain"><span><strong>Explication du cours</strong><br><span class="help" style="white-space:normal">Ta fiche reformulée à l'oral comme par un prof, sans rien ajouter${d.audio&&d.audio.sig===auSig(d)&&d.audio.done?" · déjà prête":""}</span></span><span class="pill">▶</span></button>
+        <button class="mini" data-act="aumode" data-m="quiz"><span><strong>Questions à l'oral</strong><br><span class="help" style="white-space:normal">MédiJ pose la question, te laisse réfléchir, puis donne la réponse (objectifs et flashcards)</span></span><span class="pill">▶</span></button>
         <button class="mini" data-act="aumode" data-m="fiche"><span><strong>Fiche lue telle quelle</strong><br><span class="help" style="white-space:normal">Le texte exact de ta fiche, mot à mot</span></span><span class="pill">▶</span></button><button class="linkbtn" data-act="autest" style="justify-self:start">🔊 Tester le son</button></div>`
     :`<div class="au-part" id="au-part">${esc(a.parts[a.i]?.h||"")}</div>
       <div class="au-now" id="au-now" aria-live="off">${esc(ch[a.j]||(a.busy?"Préparation de l'explication…":""))}</div>
@@ -2566,7 +2596,7 @@ function auBar(){
       <div class="row au-ctrl"><button class="iconbtn" data-act="auprev" aria-label="Partie précédente">⏮</button><button class="iconbtn" data-act="auback" aria-label="Revenir en arrière">↺</button>
         <button class="btn au-play" data-act="${a.playing?"aupause":"auplay"}" ${!n?"disabled":""}>${a.playing?"❚❚ Pause":a.ended?"▶ Réécouter":"▶ Écouter"}</button>
         <button class="iconbtn" data-act="aunext" aria-label="Partie suivante">⏭</button></div>
-      <div class="filters" style="margin:0"><select id="au-rate" aria-label="Vitesse">${[0.8,0.9,1,1.1,1.25,1.5].map(r=>`<option value="${r}" ${r===rate?"selected":""}>Vitesse ×${String(r).replace(".",",")}</option>`).join("")}</select>
+      <div class="filters" style="margin:0">${a.mode==="quiz"?`<select id="au-think" aria-label="Temps de réflexion">${[3,5,8,12].map(x=>`<option value="${x}" ${x===+(AU_PREF.think||5)?"selected":""}>Réflexion ${x} s</option>`).join("")}</select>`:""}<select id="au-rate" aria-label="Vitesse">${[0.8,0.9,1,1.1,1.25,1.5].map(r=>`<option value="${r}" ${r===rate?"selected":""}>Vitesse ×${String(r).replace(".",",")}</option>`).join("")}</select>
         <select id="au-voice" aria-label="Voix">${AU_VOICES.length?AU_VOICES.map(x=>`<option value="${esc(x.voiceURI)}" ${v&&x.voiceURI===v.voiceURI?"selected":""}>${esc(auVoiceLabel(x))}</option>`).join(""):`<option>Voix française par défaut</option>`}</select></div>${(v?auQual(v):0)<3?`<p class="help" style="margin:4px 0 0">🎙️ Voix plus humaine : ${/iPad|iPhone|Macintosh/.test(navigator.userAgent)?"Réglages → Accessibilité → Contenu énoncé → Voix → Français → télécharge une voix <strong>Premium</strong> ou <strong>Améliorée</strong>, puis rouvre l'appli et choisis-la ici (★★★).":/Android/.test(navigator.userAgent)?"Paramètres → Synthèse vocale → moteur Google → installe la voix française haute qualité, puis choisis-la ici.":"choisis une voix ★★★ (Natural / Online) si ton navigateur en propose, par exemple dans Edge ou Chrome."}</p>`:""}
       ${a.mode==="explain"?`<p class="help">L'explication est faite uniquement à partir de ta fiche${d.profNotes?" et des notes du prof":""} ; ton cours de référence n'est pas modifié. En cas de doute, la fiche fait foi.${a.busy?"":` <button class="linkbtn" data-act="auregen">Refaire l'explication</button>`}</p>`:""}
       ${a.mode?`<button class="linkbtn" data-act="aumode0" style="align-self:flex-start">Changer de mode</button>`:""}`}
@@ -2574,7 +2604,7 @@ function auBar(){
     ${!TTS?`<p class="help">La voix n'est pas disponible sur ce navigateur.</p>`:""}</div>`;
   auHilite();
 }
-function auClose(){auStop();X.au=null;auBar()}
+function auClose(){auStop();auWake(false);X.au=null;auBar()}
 
 /* ---------- Rappels : calendrier (.ics avec alarmes) + notifications de l'appli ouverte ---------- */
 const LS_NT="medij-notif";
@@ -3535,6 +3565,7 @@ document.addEventListener("click",async e=>{
     case "icsgo":{const v=$("#nt-alarm");if(v){NT.alarm=+v.value;ntSave()}icsDownload(b.dataset.s);break}
     case "ntperm":{try{const r=await Notification.requestPermission();if(r==="granted"){NT.on=true;ntSave();toast("Notifications activées");ntTick()}}catch(e){}notifSheet();break}
     case "auopen":auUnlock();auOpen(b.dataset.id);break;
+    case "auqueue":{auUnlock();const m=b.dataset.m||"fiche";const ids=b.dataset.ids?b.dataset.ids.split(","):S.decks.filter(x=>x.matiere===b.dataset.mat&&!x.example).map(x=>x.id);auQueue(ids,m);break}
     case "aumode":auUnlock();auStart(b.dataset.m);break;
     case "aumode0":auStop();if(X.au){X.au.mode=null;X.au.parts=[];X.au.err="";X.au.busy=false}auBar();break;
     case "auregen":{const dd=getDeck(X.au?.deckId);if(dd){dd.audio=null;markDirty(dd.id)}auStop();auStart("explain");break}
@@ -3658,6 +3689,7 @@ document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="nt-on"){NT.on=t.checked;ntSave();return}
   if(t.id==="nt-alarm"){NT.alarm=+t.value;ntSave();return}
+  if(t.id==="au-think"){AU_PREF.think=+t.value;auPrefSave();return}
   if(t.id==="au-rate"){AU_PREF.rate=+t.value;auPrefSave();if(X.au?.playing){auPause();auPlay()}return}
   if(t.id==="au-voice"){AU_PREF.voice=t.value;auPrefSave();if(X.au?.playing){auPause();auPlay()}return}
   if(t.id==="cf-files"&&t.files?.length){readClasseForm();const fs=[...t.files];readFiles(fs,"cours");render()}
