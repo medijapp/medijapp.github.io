@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118195000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118195500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1734,6 +1734,10 @@ function viewClasseForm(){
     <p class="help" style="margin:0">Laisse le titre vide : le nom du fichier sera utilisé.</p></div>
   <div class="panel stack"><div class="label">3 · Le cours</div>
     <label class="btn soft" style="align-self:flex-start">📄 Choisir le fichier (PDF, PowerPoint, Word, photos)<input type="file" id="cf-files" multiple accept=".pdf,.pptx,.ppt,.docx,.txt,.md,image/*" hidden></label>
+    <details class="item" ${X.imp?.pasted?"":""}><summary>📋 Ou copier-coller le texte du cours</summary><div class="stack" style="margin-top:8px">
+      <p class="help" style="margin:0">Ouvre ton PDF, appuie longuement sur le texte → <strong>Tout sélectionner</strong> → <strong>Copier</strong>, puis colle ici.</p>
+      <textarea id="cf-paste" rows="8" placeholder="Colle ici le texte de ton cours…"></textarea>
+      <button class="btn small" data-act="cfpaste" style="align-self:flex-start">Utiliser ce texte</button></div></details>
     <div id="imp-box">${impInner()}</div></div>
   <button class="btn ghost" data-act="ccancel" style="align-self:center">Annuler</button></div>`;
   return topbar(f.id&&X.classes.some(x=>x.id===f.id)?"Modifier le cours suivi":"Cours suivi",true)+`<div class="stack">
@@ -3704,7 +3708,7 @@ document.addEventListener("click",async e=>{
     case "genlocal2":if(d)genLocalAll(d,b.dataset.w);break;
     case "genlocalall":{readClasseForm();const dk=ensureDeck(X.form);const t=(X.imp?.text||"").trim();if(!dk||words(t)<30){toast("Choisis un chapitre et importe un cours");break}
       const prev=S.src.get(dk.id)||{};const body={...prev,text:prev.text&&!prev.text.includes(t.slice(0,200))?prev.text+"\n\n"+t:t,origin:"importé dans le site",updatedAt:today()};S.src.set(dk.id,body);S.idx=null;if(db){try{await db.doc("sources/"+dk.id).set(body)}catch(e){}}else saveSource(dk.id,body.text);
-      await genLocalAll(dk,"all");break}
+      await genLocalAll(dk,"all");X.form=null;X.imp=null;openDeck(dk.id,"fiche");window.scrollTo(0,0);break}
     case "impgen":if(d)doImportants(d);break;
     case "methgen":methGen(b.dataset.m);break;
     case "memomode":X.memoHide=b.dataset.m==="test";X.memoShow={};render();break;
@@ -3739,6 +3743,12 @@ document.addEventListener("click",async e=>{
     case "cnew":X.form={id:uid(),date:today(),type:"CM",matiere:b.dataset.m?(Object.keys(groupsByMat()).find(k=>fold(k).startsWith(fold(b.dataset.m)))||b.dataset.m):"",deckId:b.dataset.deck&&getDeck(b.dataset.deck)?b.dataset.deck:"",newName:"",notes:"",comp:null,supports:[],merge:true,simple:!!b.dataset.imp};if(X.form.deckId&&!b.dataset.m)X.form.matiere=getDeck(X.form.deckId).matiere==="Sans matière"?"":getDeck(X.form.deckId).matiere;X.imp=null;S.view="classe";render();window.scrollTo(0,0);if(b.dataset.imp)setTimeout(()=>$("#cf-files")?.click(),50);break;
     case "cedit":{const x=X.classes.find(y=>y.id===b.dataset.id);if(x){X.form={...clone(x),newName:"",merge:false};X.imp=null;render();window.scrollTo(0,0)}break}
     case "ccancel":{const back=X.form?.simple;X.form=null;X.imp=null;if(back)S.view=S.mat&&groupsByMat()[S.mat]?"matiere":"matieres";render();window.scrollTo(0,0);break}
+    case "cfpaste":{readClasseForm();const t=($("#cf-paste")?.value||"").replace(/\r/g,"").trim();if(words(t)<30){toast("Colle d'abord le texte du cours (au moins quelques lignes)");break}
+      const prev=X.imp&&X.imp.purpose==="cours"?X.imp:{purpose:"cours",files:[],text:"",busy:false};X.imp=prev;
+      prev.files.push({name:"Texte collé",kind:"text",size:t.length,status:words(t)+" mots collés",pages:[],text:t});prev.pasted=true;
+      prev.text=prev.files.filter(f=>f.text).map(f=>(prev.files.length>1?"=== "+f.name+" ===\n":"")+f.text).join("\n\n");
+      if(!X.form.newName&&!X.form.deckId){const first=t.split("\n").map(x=>x.trim()).find(x=>x.length>3&&x.length<80);if(first){X.form.newName=first.replace(/^[#*\d.)\s-]+/,"").slice(0,70);const i=$("#cf-new");if(i)i.value=X.form.newName}}
+      $("#cf-paste").value="";impRefresh();toast("Texte ajouté : choisis maintenant de créer avec ou sans IA");setTimeout(()=>document.getElementById("imp-box")?.scrollIntoView({behavior:"smooth",block:"start"}),100);break}
     case "cfpick":{readClasseForm();X.form.matiere=b.dataset.m;const i=$("#cf-mat");if(i)i.value=b.dataset.m;document.querySelectorAll('[data-act="cfpick"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.m===b.dataset.m));cfDeckRefresh("mat");break}
     case "csave":saveClasse();break;
     case "cdel":confirmSheet("Supprimer ce cours suivi ?","Supprimer",async()=>{const id=X.form.id;X.classes=X.classes.filter(x=>x.id!==id);await delDoc("classes/"+id);X.form=null;render()});break;
@@ -3750,7 +3760,7 @@ document.addEventListener("click",async e=>{
     case "impfig":{readClasseForm();const all=X.imp.files.flatMap(f=>f.pages.filter(p=>p.thumb));const p=all[+b.dataset.i];if(p){p.fig=!p.fig;const el=document.getElementById("imp-box");if(el){el.innerHTML=impInner();const det=el.querySelector("details");if(det)det.open=true}}break}
     case "cgen":{readClasseForm();const f=X.form;const dk=ensureDeck(f);if(!dk){toast("Choisis un chapitre ou donne un titre au nouveau cours");break}
       const text=(X.imp?.text||"").trim();if(words(text)<30){toast("Texte trop court pour créer une fiche");break}
-      const go=()=>genChapter(dk,text,impFigList());
+      const go=()=>genChapter(dk,text,impFigList()).then(()=>{X.form=null;X.imp=null;openDeck(dk.id,"fiche");window.scrollTo(0,0)});
       if((dk.fiche||"").trim())confirmSheet2(`« ${dk.name} » a déjà une fiche. La remplacer par une nouvelle fiche faite depuis ce support ? (L'ancienne est gardée en copie ; les flashcards et QCM existants et leur progression sont conservés, les nouveaux s'ajoutent sans doublon.)`,"Oui, générer",go);else go();
       break}
     case "csrc":{readClasseForm();const dk=ensureDeck(X.form);if(!dk){toast("Choisis un chapitre");break}const prev=S.src.get(dk.id)?.text||"";const t=(X.imp?.text||"").trim();if(prev.includes(t.slice(0,300))){toast("Ce texte est déjà dans le cours source");break}
