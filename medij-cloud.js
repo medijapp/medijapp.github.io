@@ -26,6 +26,7 @@
 
   var sb = null, user = null, timer = null, state = "local", lastErr = "", allowed = false;
   var cloud = window.__MEDIJ_CLOUD = { state: function () { return state; }, user: function () { return user; } };
+  cloud.isAdmin = function () { return isAdmin(); };
 
   /* toute écriture de l'appli marque les données « à envoyer » */
   function touched(k) {

@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118194500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118192500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1010,6 +1010,7 @@ function tabFiche(d){
   ${methCard(d)}
   ${figs.length?`<div class="panel stack" style="margin-bottom:14px"><div class="label">Schémas · ${figs.length}</div><div class="chips">${figs.map((f,n)=>`<button class="chip" data-act="jump" data-anchor="fig-${n}">${esc(f.cap||"Schéma "+(n+1))}</button>`).join("")}</div></div>`:""}
   ${ficheExtras(d)}
+  ${!d.fiche?.trim()&&(S.src.get(d.id)?.text||"").trim()?`<div class="row" style="margin-bottom:12px">${aiOK()?`<button class="btn small" data-act="genmore" data-w="fiche">✨ Fiche, flashcards et QCM avec l'IA</button>`:""}<button class="btn ghost small" data-act="genlocal2" data-w="fiche">⚡ Fiche des points clés sans IA</button></div>`:""}
   <div class="panel fiche">${d.fiche?.trim()?md(d.fiche):`<div class="empty">Pas encore de fiche. Écris-la dans l'onglet Modifier.</div>`}</div>`;
 }
 function tabSource(d){
@@ -1055,7 +1056,8 @@ function tabCov(d){
 function genBar(d,what){const sess=S.session&&S.session.deckId===d.id&&S.session.type===what;if(sess||d.example)return "";
   const n=what==="qcm"?(d.qcm||[]).length:(d.cards||[]).length,hasSrc=!!(S.src.get(d.id)?.text||"").trim()||!!(d.fiche||"").trim();if(!hasSrc)return "";
   const lab=what==="qcm"?(n?"✨ Ajouter des QCM depuis le cours":"✨ Créer les QCM depuis le cours"):(n?"✨ Ajouter des flashcards depuis le cours":"✨ Créer les flashcards depuis le cours");
-  return aiOK()?`<div class="row" style="margin-bottom:12px"><button class="btn ${n?"ghost":""} small" data-act="genmore" data-w="${what}">${lab}</button>${n?"":`<span class="help">Basé uniquement sur ton cours.</span>`}</div>`:""}
+  const loc=`<button class="btn ghost small" data-act="genlocal2" data-w="${what}">⚡ ${what==="qcm"?"QCM":"Flashcards"} sans IA (illimité)</button>`;
+  return `<div class="row" style="margin-bottom:12px">${aiOK()?`<button class="btn ${n?"ghost":""} small" data-act="genmore" data-w="${what}">${lab}</button>`:""}${loc}${!n&&aiOK()?`<span class="help">Basé uniquement sur ton cours.</span>`:""}</div>`}
 function tabCards(d){return genBar(d,"cards")+tabCards0(d)}
 function tabQcm(d){return genBar(d,"qcm")+tabQcm0(d)}
 function tabCards0(d){
@@ -1535,7 +1537,8 @@ function impInner(){
   <label class="f">Texte extrait (tu peux le corriger)<textarea id="imp-text" rows="9">${esc(imp.text)}</textarea></label>
   <p class="help">${words(imp.text)} mots extraits.</p>
   ${imp.purpose==="cours"&&imp.text?`<div class="stack" style="gap:8px">
-      <button class="btn" data-act="cgen" ${aiOK()?"":"disabled"}>Créer la fiche, les flashcards et les QCM depuis ce support</button>
+      <button class="btn" data-act="cgen" ${aiOK()?"":"disabled"}>Créer la fiche, les flashcards et les QCM depuis ce support</button>${GEN_MAX>100||window.__MEDIJ_CLOUD?.isAdmin?.()?"":`<span class="help">${genLeft()} cours sur ${GEN_MAX} encore possibles aujourd'hui.</span>`}
+      <button class="btn ${aiOK()?"ghost":""}" data-act="genlocalall">⚡ Tout créer sans IA (instantané, illimité)</button>
       <button class="btn ghost" data-act="csrc">Enregistrer seulement comme cours source</button>
       <button class="btn ghost" data-act="cprof">Ajouter aux notes du prof (sans doublon)</button>${aiOK()?"":noAI}</div>`:""}`}`;
 }
@@ -1547,6 +1550,69 @@ function jobLog(m){if(!X.job)return;X.job.lines.push(m);jobRender()}
 function jobRender(){const o=$("#overlay");const j=X.job;if(!j){o.innerHTML="";return}
   o.innerHTML=`<div class="sheet"><div class="box"><div class="label">MédiJ travaille</div><h3>${esc(j.title)}</h3><div class="stack" style="gap:4px;max-height:40vh;overflow:auto">${j.lines.map(l=>`<div class="help">${esc(l)}</div>`).join("")}</div>${j.done?`<button class="btn" data-act="jobclose">Fermer</button>`:`<div class="row"><span class="spin" aria-hidden="true"></span><span class="help">Cela peut prendre quelques minutes pour un long cours.</span></div><button class="btn ghost" data-act="jobstop">Arrêter</button>`}</div></div>`}
 function chunksOf(text,max){const out=[];let cur="";for(const l of text.split("\n")){if(cur.length+l.length>max&&cur){out.push(cur);cur=""}cur+=l+"\n"}if(cur.trim())out.push(cur);return out}
+/* limite : 3 cours transformés (fiche, flashcards, QCM) par jour et par personne — l'administratrice n'est pas limitée */
+const GEN_MAX=1e9; /* pas de limite par jour pour l'instant (mettre 3 pour limiter) */
+function genToday(){const st=X.stats[today()];return (st&&st.genIds)||[]}
+function genLeft(){return Math.max(0,GEN_MAX-genToday().length)}
+function genAllowed(id){try{if(window.__MEDIJ_CLOUD?.isAdmin?.())return true}catch(e){}const L=genToday();return L.includes(id)||L.length<GEN_MAX}
+function genCount(id){const t=today();const s=X.stats[t]||(X.stats[t]={id:t,date:t,cards:0,cardsOk:0,qcm:0,qcmOk:0,min:0});s.genIds=s.genIds||[];if(!s.genIds.includes(id)){s.genIds.push(id);putDoc("stats/"+t,s)}}
+const genLimitMsg=()=>`Tu as déjà transformé ${GEN_MAX} cours aujourd'hui (limite du jour). Enregistre ce cours (bouton « Enregistrer seulement comme cours source ») : tu pourras créer sa fiche et ses QCM demain, et dès maintenant ses flashcards sans IA dans l'onglet Flashcards.`;
+/* ---------- Flashcards sans IA : fabriquées à partir du cours par des règles simples (gratuit, illimité, hors connexion) ---------- */
+function localCards(text){
+  const out=[],seen=new Set(),add=(q,a,sec)=>{q=q.replace(/\s+/g," ").trim();a=a.replace(/[ \t]+/g," ").replace(/\n\s*/g,"\n").trim();const k=normLine(q);if(q.length<6||a.length<2||a.length>500||seen.has(k))return;seen.add(k);out.push({q,a,s:sec||""})};
+  const clean=l=>l.replace(/\*\*|__|`|^#+\s*/g,"").replace(/^\s*(?:[-•*▪●◦➢➤→]|\d+[.)]|[a-z][.)])\s+/i,"").trim();
+  const isItem=l=>/^\s*(?:[-•*▪●◦➢➤→]|\d+[.)]|[a-z][.)])\s+\S/i.test(l);
+  const isHead=l=>/^\s*#{1,4}\s/.test(l)||(/^\s*(?:[IVX]+|\d+(?:\.\d+)*)[.)-]?\s+[A-ZÀ-Ý]/.test(l)&&l.length<90&&!/[.;]$/.test(l.trim()))||(l.trim().length>3&&l.trim().length<70&&l.trim()===l.trim().toUpperCase()&&/[A-Z]/.test(l));
+  const L=String(text||"").replace(/\r/g,"").split("\n").filter(l=>!/^\s*\[(?:Page|Diapo) \d+\]\s*$/.test(l));let sec="";
+  for(let i=0;i<L.length;i++){const raw=L[i],l=clean(raw);if(!l)continue;
+    if(isHead(raw)){sec=l.replace(/^(?:[IVX]+|\d+(?:\.\d+)*)[.)-]?\s+/,"");}
+    // 1. listes : « titre : » ou titre de section suivi d'au moins 2 puces
+    if(!isItem(raw)){let j=i+1,items=[];while(j<L.length&&(isItem(L[j])||!L[j].trim())){if(L[j].trim())items.push(clean(L[j]));j++}
+      if(items.length>=2&&items.length<=12){const t=l.replace(/\s*:\s*$/,"");if(t.length<=110)add(`Citer : ${t}`,items.map(x=>"• "+x).join("\n"),sec)}}
+    // 2. définitions « Terme : définition » ou « Terme = définition »
+    let m=l.match(/^([^:=]{2,60}?)\s*[:=]\s*(.{8,})$/);
+    if(m&&m[1].split(/\s+/).length<=7&&!/^(?:ex|exemple|remarque|NB|N\.B|rq|figure|tableau|page|diapo)\b/i.test(m[1]))add(`Définir : ${m[1].trim()}`,m[2],sec);
+    // 3. « X est / sont / se définit comme / correspond à … »
+    for(const ph of l.split(/(?<=[.!?])\s+/)){const d=ph.match(/^((?:L['’]|Le |La |Les |Un |Une )?[^,;:]{2,60}?)\s+(est|sont|se définit comme|se définissent comme|correspond à|correspondent à|désigne|désignent)\s+(.{10,})$/);
+      if(d&&d[1].split(/\s+/).length<=7&&!/^(?:il|elle|ils|elles|ce|cela|ceci|on|qui|c)$/i.test(d[1].trim()))add(`Qu'est-ce que : ${d[1].replace(/^(?:L['’]|Le |La |Les |Un |Une )/,"").trim()} ?`,ph,sec);
+      // 4. chiffres clés avec unité : phrase à trous
+      const n=ph.match(/(\d+(?:[.,]\d+)?(?:\s*(?:à|-|–)\s*\d+(?:[.,]\d+)?)?\s*(?:µmol\/L|mmol\/L|mg\/dL|g\/dL|mg\/L|G\/L|g\/L|UI\/L|\/mm3|\/min|%|mmHg|cmH2O|mmol|µmol|mEq|mcg|µg|mg|kg|ml|mL|dl|dL|°C|cm|mm|µm|nm|jours?|semaines?|mois|ans|heures?|minutes?|secondes?|min|bpm|UI|g|l|L|j|h|s|U)(?![a-zA-Zé]))/);
+      if(n&&ph.length<=260&&ph.length>=25)add(`Complète : ${ph.replace(n[1],"……")}`,n[1].trim(),sec)}}
+  return out.slice(0,80)}
+/* QCM sans IA : à partir des listes, définitions et chiffres clés du cours (5 propositions, 1 à 3 justes) */
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function localQcm(text){const C=localCards(text),Q=[],L="ABCDE";
+  const lists=C.filter(c=>c.q.startsWith("Citer : ")).map(c=>({t:c.q.slice(8),items:c.a.split("\n").map(x=>x.replace(/^•\s*/,"").trim()).filter(Boolean)}));
+  /* pour les QCM : seulement les vraies définitions, sans le mot défini dans la réponse (sinon la réponse est évidente) */
+  const pred=a=>{const m=a.match(/^.{2,80}?\s(?:est|sont|se définit comme|se définissent comme|correspond à|correspondent à|désigne|désignent)\s+(.+)$/);return m?m[1]:a};
+  const defs=C.filter(c=>/^(Définir|Qu'est-ce que) : /.test(c.q)).map(c=>({t:c.q.replace(/^(Définir|Qu'est-ce que) : /,"").replace(/\s*\?$/,""),a:c.q.startsWith("Définir")?c.a:pred(c.a)}))
+    .filter(x=>/^(?:un|une|le|la|les|des|l['’]|du|de la|d['’]|toute?|ensemble|sensation|état|arrêt|augmentation|diminution|inflammation|présence|absence|trouble|atteinte|processus)\b/i.test(x.a)&&!/\d/.test(x.a.slice(0,30)));
+  const nums=C.filter(c=>c.q.startsWith("Complète : "));
+  const mk=(q,opts,expl)=>{const o=shuffle(opts).slice(0,5);const correct=o.map((x,i)=>x.ok?i:-1).filter(i=>i>=0);if(!correct.length||o.length<3)return;
+    Q.push({id:uid(),q,options:o.map(x=>x.t),correct,expl:o.map((x,i)=>`${L[i]}. ${x.ok?"Vrai":"Faux"}${x.why?" : "+x.why:""}`).join(" ")+(expl?" — "+expl:""),gen:true,loc:true})};
+  // listes : quelles propositions font partie de la liste ?
+  lists.forEach((l,i)=>{const others=lists.filter((_,j)=>j!==i).flatMap(x=>x.items.map(t=>({t,ok:false,why:"fait partie de « "+x.t+" »"})));if(others.length<2)return;
+    const good=shuffle(l.items).slice(0,Math.min(3,l.items.length)).map(t=>({t,ok:true}));mk(`Concernant « ${l.t} », quelle(s) proposition(s) en fait/font partie ?`,[...good,...shuffle(others).slice(0,5-good.length)])});
+  // définitions : quelle est la bonne définition ?
+  defs.forEach((d,i)=>{const others=shuffle(defs.filter((_,j)=>j!==i)).slice(0,4);if(others.length<2)return;
+    mk(`Quelle est la définition de « ${d.t} » ?`,[{t:d.a,ok:true},...others.map(o=>({t:o.a,ok:false,why:"définition de « "+o.t+" »"}))])});
+  // chiffres : quelle est la bonne valeur ? (les autres valeurs sont d'autres chiffres du cours)
+  const vals=nums.map(n=>n.a);
+  nums.forEach((n,i)=>{const unit=n.a.replace(/^[\d.,\s à–-]+/,"");const others=[...new Set(vals.filter((v,j)=>j!==i&&v!==n.a&&v.replace(/^[\d.,\s à–-]+/,"")===unit))].slice(0,4);if(others.length<2)return;
+    mk(n.q.replace(/^Complète : /,"Quelle valeur complète la phrase ? ").replace(/\s+$/,""),[{t:n.a,ok:true},...others.map(o=>({t:o,ok:false}))])});
+  return shuffle(Q).slice(0,30)}
+/* fiche sans IA : les points clés du cours, rangés par partie */
+function localFiche(text){const C=localCards(text);if(!C.length)return "";const by=new Map();C.forEach(c=>{const k=c.s||"Points clés";if(!by.has(k))by.set(k,[]);by.get(k).push(c)});
+  return "> Fiche des points clés, faite automatiquement à partir de ton cours (sans IA).\n\n"+[...by].map(([sec,L])=>`## ${sec}\n`+L.map(c=>c.q.startsWith("Citer : ")?`**${c.q.slice(8)}** :\n${c.a.split("\n").map(x=>"- "+x.replace(/^•\s*/,"")).join("\n")}`
+    :c.q.startsWith("Complète : ")?`- 🔢 ${c.q.slice(11).replace("……","**"+c.a+"**")}`:`- **${c.q.replace(/^(Définir|Qu'est-ce que) : /,"").replace(/\s*\?$/,"")}** : ${c.a}`).join("\n")).join("\n\n")}
+async function genLocalAll(d,what){const text=(S.src.get(d.id)?.text||"").trim()||String(d.fiche||"");const live=getDeck(d.id);const msg=[];
+  if(what==="all"||what==="fiche"){if(!(live.fiche||"").trim()){const f=localFiche(text);if(f){live.fiche=f;msg.push("fiche")}}}
+  if(what==="all"||what==="cards"){const n=addCards(live,localCards(text));msg.push(n+" flashcards")}
+  if(what==="all"||what==="qcm"){const n=addQcm(live,localQcm(text));msg.push(n+" QCM")}
+  markDirty(live.id);toast(msg.length?"Créé sans IA : "+msg.join(" · "):"Rien trouvé à extraire de ce cours");render()}
+async function genLocal(d){const text=(S.src.get(d.id)?.text||"").trim()||String(d.fiche||"");
+  const C=localCards(text);if(!C.length){toast("Je n'ai pas trouvé de définitions, listes ou chiffres clés dans ce cours.");return}
+  const live=getDeck(d.id);const n=addCards(live,C.map(c=>({...c,a:c.a})));markDirty(live.id);toast(`${n} flashcards créées sans IA`);render()}
 /* niveau de l'étudiant pour les consignes de l'IA */
 function niveauTxt(){let f="",p="";try{f=localStorage.getItem("medij-filiere")||"";p=curPer()}catch(e){}return "cours de "+(f||"médecine")+(p?" ("+p+")":"")}
 /* flashcards à partir d'un texte de cours, partie par partie ; une partie qui échoue est redécoupée puis ignorée */
@@ -1566,7 +1632,8 @@ function addCards(live,cards){const seen=new Set((live.cards||[]).map(c=>normLin
 function addQcm(live,qcm){const seen=new Set((live.qcm||[]).map(q=>normLine(q.q)));let n=0;
   for(const q of qcm){const k=normLine(q.q);if(seen.has(k))continue;seen.add(k);(live.qcm??=[]).push(q);n++}return n}
 async function genChapter(d,text,figs){
-  const job=jobShow("Fiche, flashcards et QCM · "+d.name);const signal=job.ctl.signal;const res=[];
+  if(!genAllowed(d.id)){confirmSheet2(genLimitMsg(),"D'accord",()=>{});return}
+  const job=jobShow("Fiche, flashcards et QCM · "+d.name);const signal=job.ctl.signal;const res=[];genCount(d.id);
   try{
     let figTxt="";
     if(figs.length&&!ASSETS){jobLog("ℹ️ Les schémas choisis ne peuvent pas être enregistrés ici : la fiche est créée sans eux.");figs=[]}
@@ -1591,16 +1658,17 @@ async function genChapter(d,text,figs){
       for(const g of figs)fiche=fiche.replace(new RegExp(`\\{\\{${g.n}\\|([^}]*)\\}\\}`,"g"),(m,t)=>`![${g.unit} ${g.n} · ${t.trim()}](${g.url})`);
       fiche=fiche.replace(/\{\{\d+\|[^}]*\}\}/g,"").trim();
       const live=getDeck(d.id);if(fiche){if((live.fiche||"").trim()&&normLine(live.fiche)!==normLine(fiche))live.ficheAvant=live.fiche;live.fiche=fiche;markDirty(live.id);res.push("fiche créée");jobLog("✓ Fiche enregistrée")}
-    }catch(e){if(e?.code==="cancelled")throw e;jobLog("⚠ Fiche : "+aiErr(e)+" — je passe aux flashcards.")}
+    }catch(e){if(e?.code==="cancelled")throw e;jobLog("⚠ Fiche : "+aiErr(e));const live=getDeck(d.id);if(!(live.fiche||"").trim()){const f=localFiche(text);if(f){live.fiche=f;markDirty(live.id);res.push("fiche des points clés");jobLog("ℹ️ Fiche des points clés faite sans IA (tu pourras la refaire avec l'IA plus tard).")}}}
     // 2. flashcards
     jobLog("2/3 · Flashcards (une information par carte)…");
     const C=await genCardsFrom(base,text,signal,jobLog);
+    if(!C.cards.length){const loc=localCards(text);if(loc.length){C.cards=loc;jobLog("ℹ️ L'IA n'a pas pu faire les flashcards : je les ai fabriquées directement depuis ton cours (définitions, listes, chiffres clés).")}}
     {const live=getDeck(d.id);const n=addCards(live,C.cards);if(C.plan.length){srcBody.plan=[...new Set(C.plan.map(s=>s.trim()).filter(Boolean))];if(db){try{await db.doc("sources/"+live.id).set(srcBody)}catch(e){}}}
       markDirty(live.id);res.push(n+" flashcards");jobLog(`✓ ${n} flashcards ajoutées`)}
     // 3. QCM
     jobLog("3/3 · QCM corrigés…");
     try{const Q=await genQcmFrom(base,text,signal);const live=getDeck(d.id);const n=addQcm(live,Q);markDirty(live.id);res.push(n+" QCM");jobLog(`✓ ${n} QCM ajoutés`)}
-    catch(e){if(e?.code==="cancelled")throw e;jobLog("⚠ QCM : "+aiErr(e)+" Tu pourras les créer plus tard dans l'onglet QCM.")}
+    catch(e){if(e?.code==="cancelled")throw e;jobLog("⚠ QCM : "+aiErr(e));const live=getDeck(d.id);const n=addQcm(live,localQcm(text));if(n){markDirty(live.id);res.push(n+" QCM");jobLog(`ℹ️ ${n} QCM faits sans IA à partir de ton cours.`)}}
     jobLog(res.length?"Terminé : "+res.join(" · ")+".":"Rien n'a pu être créé pour le moment : l'IA est très demandée, réessaie dans quelques minutes. Ton cours est bien enregistré.");
   }catch(e){jobLog("✗ "+aiErr(e))}
   job.done=true;jobRender();render();
@@ -1609,6 +1677,7 @@ async function genChapter(d,text,figs){
 async function genMore(d,what){
   const text=(S.src.get(d.id)?.text||"").trim()||String(d.fiche||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"");
   if(words(text)<30){toast("Il faut d'abord un cours importé ou une fiche.");return}
+  if(!genAllowed(d.id)){confirmSheet2(genLimitMsg(),"D'accord",()=>{});return}genCount(d.id);
   const job=jobShow((what==="qcm"?"QCM":"Flashcards")+" · "+d.name);const signal=job.ctl.signal;const base=`Chapitre « ${d.name} »${d.matiere?" ("+d.matiere+")":""}, ${niveauTxt()}.`;
   try{if(what==="qcm"){const Q=await genQcmFrom(base,text,signal);const n=addQcm(getDeck(d.id),Q);markDirty(d.id);jobLog(`✓ ${n} QCM ajoutés`)}
     else{const C=await genCardsFrom(base,text,signal,jobLog);const n=addCards(getDeck(d.id),C.cards);markDirty(d.id);jobLog(`✓ ${n} flashcards ajoutées`)}}
@@ -3581,7 +3650,12 @@ document.addEventListener("click",async e=>{
     case "objmode":X.objHide=b.dataset.m==="test";X.objShow={};render();break;
     case "objshow":X.objShow={...(X.objShow||{}),[b.dataset.i]:true};render();break;
     case "objgen":if(d)doObjectifs(d);break;
-    case "genmore":if(d)genMore(d,b.dataset.w);break;
+    case "genmore":if(d){if(b.dataset.w==="fiche")genChapter(d,(S.src.get(d.id)?.text||"").trim(),[]);else genMore(d,b.dataset.w)}break;
+    case "genlocal":if(d)genLocal(d);break;
+    case "genlocal2":if(d)genLocalAll(d,b.dataset.w);break;
+    case "genlocalall":{readClasseForm();const dk=ensureDeck(X.form);const t=(X.imp?.text||"").trim();if(!dk||words(t)<30){toast("Choisis un chapitre et importe un cours");break}
+      const prev=S.src.get(dk.id)||{};const body={...prev,text:prev.text&&!prev.text.includes(t.slice(0,200))?prev.text+"\n\n"+t:t,origin:"importé dans le site",updatedAt:today()};S.src.set(dk.id,body);S.idx=null;if(db){try{await db.doc("sources/"+dk.id).set(body)}catch(e){}}else saveSource(dk.id,body.text);
+      await genLocalAll(dk,"all");break}
     case "impgen":if(d)doImportants(d);break;
     case "methgen":methGen(b.dataset.m);break;
     case "memomode":X.memoHide=b.dataset.m==="test";X.memoShow={};render();break;
