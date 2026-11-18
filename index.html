@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118193500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118194000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -913,9 +913,21 @@ function perKey(p){const m=/S\s*(\d+)/i.exec(p);return m?+m[1]:99}
 function allPers(){let extra=[];try{extra=(X.planning&&X.planning.periodes)||[]}catch(e){}return [...new Set([DEF_PER,...S.decks.map(perOf),...extra,curPer()])].sort((a,b)=>perKey(a)-perKey(b)||a.localeCompare(b))}
 function perDecks(){const p=curPer();return S.decks.filter(d=>perOf(d)===p)}
 function groupsByMat(){const g={};perDecks().forEach(d=>{(g[d.matiere||"Sans matière"]??=[]).push(d)});return g}
+function myMats(){const p=curPer();return ((X.planning&&X.planning.matieres)||[]).filter(m=>m.per===p).map(m=>m.n)}
+function allMats(){return [...new Set([...myMats(),...Object.keys(groupsByMat())].filter(m=>m&&m!=="Sans matière"))].sort((a,b)=>a.localeCompare(b,"fr"))}
+async function addMat(n){n=String(n||"").trim();if(!n)return;if(!X.planning)return;const p=curPer();(X.planning.matieres??=[]);if(!X.planning.matieres.some(m=>m.per===p&&normLine(m.n)===normLine(n)))X.planning.matieres.push({n,per:p});await savePlanning()}
+/* petite fenêtre : choisir une matière existante ou en créer une */
+function matSheet(title,cur,fn){const o=$("#overlay");const M=allMats();
+  o.innerHTML=`<div class="sheet"><div class="box"><h3>${esc(title)}</h3>
+    ${M.length?`<div class="chips" style="max-height:40vh;overflow:auto">${M.map(m=>`<button class="chip ms-pick" data-m="${esc(m)}" aria-pressed="${m===cur}">${esc(m)}</button>`).join("")}</div>`:""}
+    <label class="f">${M.length?"Ou une nouvelle matière":"Nom de la matière"}<input type="text" id="ms-new" placeholder="ex. Sémiologie digestive"></label>
+    <div class="row"><button class="btn" id="ms-ok">Valider</button><button class="btn ghost" id="ms-no">Annuler</button></div></div></div>`;
+  o.querySelectorAll(".ms-pick").forEach(b=>b.onclick=()=>{o.innerHTML="";fn(b.dataset.m)});
+  $("#ms-ok").onclick=()=>{const v=$("#ms-new").value.trim();if(!v){toast("Choisis ou écris une matière");return}o.innerHTML="";fn(v)};$("#ms-no").onclick=()=>{o.innerHTML=""}}
 function viewMatieres(){
-  const groups=groupsByMat(),keys=Object.keys(groups);
-  return topbar("Matières")+`<div class="row" style="justify-content:space-between;margin-bottom:14px"><h1>Mes matières · ${esc(curPer())}</h1><span class="row" style="gap:6px"><button class="btn" data-act="cnew" data-imp="1">📥 Importer un cours</button><button class="btn ghost small" data-act="new">+ Chapitre</button></span></div>
+  const groups=groupsByMat();myMats().forEach(m=>{groups[m]??=[]});const keys=Object.keys(groups).sort((a,b)=>(a==="Sans matière")-(b==="Sans matière")||a.localeCompare(b,"fr"));
+  return topbar("Matières")+`<div class="row" style="justify-content:space-between;margin-bottom:14px"><h1>Mes matières · ${esc(curPer())}</h1><span class="row" style="gap:6px"><button class="btn" data-act="cnew" data-imp="1">📥 Importer un chapitre</button><button class="btn ghost small" data-act="matadd">＋ Matière</button></span></div>
+  <p class="help" style="margin-top:-6px">Crée tes matières, puis importe chaque chapitre dedans. Tu peux changer un chapitre de matière à tout moment.</p>
   <div class="chips" style="margin-bottom:14px">${allPers().map(p=>`<button class="chip" data-act="perset" data-p="${esc(p)}" aria-pressed="${p===curPer()}">${esc(p)} <span style="opacity:.7">· ${S.decks.filter(d=>perOf(d)===p).length}</span></button>`).join("")}<button class="chip" data-act="peradd">+ Semestre</button></div>
   ${searchBox("hq","","Chercher dans toutes les matières…")}
   ${filCas()?`<button class="mini" data-act="casview" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· tous les cours vus</span></span><span class="pill">→</span></button>`:""}
@@ -924,21 +936,23 @@ function viewMatieres(){
     const im=list.map(pinImg).find(Boolean),hh=pinHash(k);
     return `<button class="mtile pin" data-act="mat" data-m="${esc(k)}">${im&&hh%2?`<div class="cover img" style="aspect-ratio:${["4/5","1/1","3/4"][hh%3]}"><img src="${esc(im)}" alt="" loading="lazy"></div>`:`<div class="cover c${hh%6}" style="height:${[90,120,150][hh%3]}px"><span class="ini">${esc(k.charAt(0).toUpperCase())}</span></div>`}<div class="body"><h3>${esc(k)}</h3>
       <div class="help">${list.length} chapitre${list.length>1?"s":""}${due?` · <strong>${due} cartes à revoir</strong>`:""}</div>
-      <div class="progress" aria-label="${done} sur ${list.length} révisés"><i style="width:${Math.round(done/list.length*100)}%"></i></div>
-      <div class="help">${done}/${list.length} révisés${S.srcLoaded?` · cours source ${src}/${list.length}`:""}</div></div></button>`}).join("")}</div>`
-  :`<div class="empty"><h3>Aucun chapitre</h3><p>Crée un chapitre pour y ranger ta fiche, tes flashcards et tes QCM.</p></div>`}`;
+      <div class="progress" aria-label="${done} sur ${list.length} révisés"><i style="width:${Math.round(done/Math.max(1,list.length)*100)}%"></i></div>
+      <div class="help">${list.length?"":"vide · touche pour importer · "}${done}/${list.length} révisés${S.srcLoaded?` · cours source ${src}/${list.length}`:""}</div></div></button>`}).join("")}</div>`
+  :`<div class="empty"><h3>Commence par tes matières</h3><p>1. Touche <strong>＋ Matière</strong> (ex. Sémiologie digestive).<br>2. Ouvre-la et touche <strong>📥 Importer un chapitre</strong>.</p><button class="btn" data-act="matadd">＋ Créer ma première matière</button></div>`}`;
 }
 function viewMatiere(){
   const all=groupsByMat()[S.mat]||[];
-  if(!all.length){S.view="matieres";return viewMatieres()}
+  if(!all.length&&!myMats().includes(S.mat)){S.view="matieres";return viewMatieres()}
   const done=all.filter(d=>d.learnedOn).length;
   const list=S.mf==="todo"?all.filter(d=>!d.learnedOn):S.mf==="done"?all.filter(d=>d.learnedOn):all;
   const parts=[...new Set(list.map(d=>d.partie).filter(Boolean))];
   const pw=l=>l.length?`<div class="pins">${l.map(pinCard).join("")}</div>`:"";
   const inner=parts.length?[...parts.map(p=>`<h3 class="partie">${esc(p)} <span class="muted" style="font-weight:400;font-size:.85rem;font-style:normal">· ${list.filter(d=>d.partie===p).length}</span></h3>${pw(list.filter(d=>d.partie===p))}`),pw(list.filter(d=>!d.partie))].join(""):pw(list);
   return topbar(S.mat,true)+`<div class="hero"><div class="label">Matière</div><h1>${esc(S.mat)}</h1>
-    <div class="progress" style="margin-top:8px"><i style="width:${Math.round(done/all.length*100)}%"></i></div>
+    <div class="progress" style="margin-top:8px"><i style="width:${Math.round(done/Math.max(1,all.length)*100)}%"></i></div>
     <div class="help">${done} révisé${done>1?"s":""} · ${all.length-done} à réviser · ${all.length} au total</div></div>
+  <div class="row" style="margin-bottom:12px"><button class="btn" data-act="cnew" data-imp="1" data-m="${esc(S.mat)}">📥 Importer un chapitre</button>${S.mat!=="Sans matière"?`<button class="btn ghost small" data-act="matren">Renommer</button>`:""}${!all.length?`<button class="btn ghost small" data-act="matdel" style="color:var(--late)">Supprimer</button>`:""}</div>
+  ${!all.length?`<div class="empty"><h3>Matière vide</h3><p>Touche <strong>📥 Importer un chapitre</strong> et choisis ton cours (PDF, PowerPoint, Word ou photos).</p></div>`:""}
   ${TTS&&(groupsByMat()[S.mat]||[]).some(d=>(d.fiche||"").trim())?`<button class="mini" data-act="auqueue" data-m="quiz" data-mat="${esc(S.mat)}" style="margin-bottom:8px"><span><strong>🎧 Écouter cette matière</strong> <span class="muted">· questions à l'oral, cours après cours</span></span><span class="pill">▶</span></button>`:""}
   ${filCas()?`<button class="mini" data-act="casview" data-m="${esc(S.mat)}" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· cette matière</span></span><span class="pill">→</span></button>`:""}
   ${filMed()?`<button class="mini" data-act="synopen" data-m="${esc(S.mat)}" style="margin-bottom:12px"><span><strong>Syndromes et triades</strong> <span class="muted">· ${syndromes(S.mat).length} relevés dans les cours</span></span><span class="pill">→</span></button>`:""}
@@ -996,7 +1010,7 @@ function viewDeck(){
   else if(S.tab==="recite")body=tabRecite(d);
   else if(S.tab==="memo")body=viewMemo(d);
   else body=tabEdit(d);
-  return topbar(d.name,true)+`<div class="hero"><div class="label">${esc(d.matiere||"")}${d.partie?" · "+esc(d.partie):""}${d.example?" · exemple":""}</div><h1>${esc(d.name)}</h1>${(d.fiche||"").trim()?`<button class="btn soft au-btn" data-act="auopen" data-id="${d.id}">🎧 Écouter le cours</button>`:""}</div>
+  return topbar(d.name,true)+`<div class="hero"><div class="label">${d.example?esc(d.matiere||""):`<button class="linkbtn" data-act="chmat" style="padding:0;font:inherit;letter-spacing:inherit;text-transform:inherit">📁 ${esc(d.matiere||"Sans matière")} · changer</button>`}${d.partie?" · "+esc(d.partie):""}${d.example?" · exemple":""}</div><h1>${esc(d.name)}</h1>${(d.fiche||"").trim()?`<button class="btn soft au-btn" data-act="auopen" data-id="${d.id}">🎧 Écouter le cours</button>`:""}</div>
   ${deckNav2()}${body}`;
 }
 function tabFiche(d){
@@ -1711,7 +1725,17 @@ function viewClasse(){
     :list.length?`<div class="empty">Aucun cours dans ce filtre.</div>`:`<div class="empty"><h3>Note ici chaque cours suivi</h3><p>Date, notes prises, supports du prof, ta compréhension… Le site suit ensuite la fiche, les flashcards, les QCM et les révisions J de chaque cours.</p><button class="btn" data-act="cnew">+ Cours suivi</button></div>`}</div>`;
 }
 function viewClasseForm(){
-  const f=X.form,mats=[...new Set(S.decks.map(d=>d.matiere).filter(Boolean))];
+  const f=X.form,mats=allMats();
+  if(f.simple)return topbar("Importer un chapitre",true)+`<div class="stack">
+  <div class="panel stack"><div class="label">1 · La matière</div>
+    <label class="f">Matière<input type="text" id="cf-mat" list="cf-mats" value="${esc(f.matiere)}" placeholder="ex. Sémiologie digestive"><datalist id="cf-mats">${mats.map(m=>`<option value="${esc(m)}">`).join("")}</datalist></label>
+    ${mats.length?`<div class="chips">${mats.slice(0,12).map(m=>`<button class="chip" data-act="cfpick" data-m="${esc(m)}" aria-pressed="${m===f.matiere}">${esc(m)}</button>`).join("")}</div>`:""}</div>
+  <div class="panel stack"><div class="label">2 · Le chapitre</div><div id="cf-deckbox">${cfDeckBox()}</div>
+    <p class="help" style="margin:0">Laisse le titre vide : le nom du fichier sera utilisé.</p></div>
+  <div class="panel stack"><div class="label">3 · Le cours</div>
+    <label class="btn soft" style="align-self:flex-start">📄 Choisir le fichier (PDF, PowerPoint, Word, photos)<input type="file" id="cf-files" multiple accept=".pdf,.pptx,.ppt,.docx,.txt,.md,image/*" hidden></label>
+    <div id="imp-box">${impInner()}</div></div>
+  <button class="btn ghost" data-act="ccancel" style="align-self:center">Annuler</button></div>`;
   return topbar(f.id&&X.classes.some(x=>x.id===f.id)?"Modifier le cours suivi":"Cours suivi",true)+`<div class="stack">
   <div class="panel stack"><div class="label">Le cours</div>
     <div class="filters"><label class="f">Date<input type="date" id="cf-date" value="${esc(f.date)}"></label>
@@ -1746,7 +1770,8 @@ function readClasseForm(){
   if(v("imp-text")&&X.imp)X.imp.text=v("imp-text").value;
 }
 function ensureDeck(f){
-  let d=getDeck(f.deckId);if(d)return d;
+  let d=getDeck(f.deckId);if(d){if(f.matiere&&normLine(f.matiere)!==normLine(d.matiere||"")){d.matiere=f.matiere;markDirty(d.id);sortDecks()}if(f.matiere)addMat(f.matiere);return d}
+  if(f.matiere)addMat(f.matiere);
   let name=(f.newName||"").trim();if(!name){const fn=(X.imp?.files||[]).find(x=>x.name)?.name||"";name=fn.replace(/\.[a-z0-9]+$/i,"").replace(/[_-]+/g," ").trim()}if(!name)return null;
   d={id:uid(),periode:curPer(),name,matiere:f.matiere||"Sans matière",learnedOn:null,jDone:[],fiche:"",cards:[],qcm:[],lastScore:null,createdAt:today()};
   S.decks.push(d);sortDecks();markDirty(d.id);f.deckId=d.id;return d;
@@ -1769,7 +1794,7 @@ async function saveClasse(){
   await putDoc("classes/"+e.id,e);
   X.form=null;X.imp=null;render();window.scrollTo(0,0);toast("Cours suivi enregistré");
 }
-function cfOpts(){const f=X.form;const decks=S.decks.filter(d=>!f.matiere||normLine(d.matiere||"")===normLine(f.matiere));
+function cfOpts(){const f=X.form;const decks=S.decks.filter(d=>!d.example&&(!f.matiere||normLine(d.matiere||"")===normLine(f.matiere)||d.id===f.deckId));
   return `<option value="">— Nouveau cours (pas encore dans le site) —</option>${decks.map(x=>`<option value="${x.id}" ${f.deckId===x.id?"selected":""}>${esc(x.name)}${f.matiere?"":" · "+esc(x.matiere||"")}</option>`).join("")}`}
 function cfSim(){const f=X.form;const d=getDeck(f.deckId);const sim=!d&&f.newName?similarDeck(f.newName,f.matiere):null;
   return sim?`<div class="callout">Ce titre ressemble à « <strong>${esc(sim.name)}</strong> » (${esc(sim.matiere||"")}), déjà dans le site. <button class="btn small soft" data-act="cusesim" data-id="${sim.id}">Utiliser ce chapitre</button></div>`:""}
@@ -3654,6 +3679,10 @@ document.addEventListener("click",async e=>{
     case "objgen":if(d)doObjectifs(d);break;
     case "genmore":if(d){if(b.dataset.w==="fiche")genChapter(d,(S.src.get(d.id)?.text||"").trim(),[]);else genMore(d,b.dataset.w)}break;
     case "genlocal":if(d)genLocal(d);break;
+    case "matadd":matSheet("Nouvelle matière","",async m=>{await addMat(m);S.mat=m;S.mf="all";S.view="matiere";render();toast("Matière « "+m+" » créée")});break;
+    case "chmat":if(d)matSheet("Ranger « "+d.name+" » dans…",d.matiere,async m=>{d.matiere=m;markDirty(d.id);await addMat(m);sortDecks();S.mat=m;toast("Rangé dans « "+m+" »");render()});break;
+    case "matren":{const old=S.mat;matSheet("Renommer « "+old+" » en…","",async m=>{if(m===old)return;S.decks.filter(x=>x.matiere===old).forEach(x=>{x.matiere=m;markDirty(x.id)});if(X.planning?.matieres)X.planning.matieres=X.planning.matieres.filter(x=>!(x.per===curPer()&&x.n===old));await addMat(m);sortDecks();S.mat=m;render();toast("Matière renommée")});break}
+    case "matdel":{const old=S.mat;if(X.planning?.matieres){X.planning.matieres=X.planning.matieres.filter(x=>!(x.per===curPer()&&x.n===old));await savePlanning()}S.view="matieres";render();toast("Matière supprimée");break}
     case "genlocal2":if(d)genLocalAll(d,b.dataset.w);break;
     case "genlocalall":{readClasseForm();const dk=ensureDeck(X.form);const t=(X.imp?.text||"").trim();if(!dk||words(t)<30){toast("Choisis un chapitre et importe un cours");break}
       const prev=S.src.get(dk.id)||{};const body={...prev,text:prev.text&&!prev.text.includes(t.slice(0,200))?prev.text+"\n\n"+t:t,origin:"importé dans le site",updatedAt:today()};S.src.set(dk.id,body);S.idx=null;if(db){try{await db.doc("sources/"+dk.id).set(body)}catch(e){}}else saveSource(dk.id,body.text);
@@ -3689,9 +3718,10 @@ document.addEventListener("click",async e=>{
     case "learned":if(d)markTaskDone(today(),"learn:"+d.id,true);break;
     case "endsession":break;
     /* En classe */
-    case "cnew":X.form={id:uid(),date:today(),type:"CM",matiere:b.dataset.m?(Object.keys(groupsByMat()).find(k=>fold(k).startsWith(fold(b.dataset.m)))||b.dataset.m):"",deckId:b.dataset.deck&&getDeck(b.dataset.deck)?b.dataset.deck:"",newName:"",notes:"",comp:null,supports:[],merge:true};X.imp=null;S.view="classe";render();window.scrollTo(0,0);if(b.dataset.imp)setTimeout(()=>$("#cf-files")?.click(),50);break;
+    case "cnew":X.form={id:uid(),date:today(),type:"CM",matiere:b.dataset.m?(Object.keys(groupsByMat()).find(k=>fold(k).startsWith(fold(b.dataset.m)))||b.dataset.m):"",deckId:b.dataset.deck&&getDeck(b.dataset.deck)?b.dataset.deck:"",newName:"",notes:"",comp:null,supports:[],merge:true,simple:!!b.dataset.imp};if(X.form.deckId&&!b.dataset.m)X.form.matiere=getDeck(X.form.deckId).matiere==="Sans matière"?"":getDeck(X.form.deckId).matiere;X.imp=null;S.view="classe";render();window.scrollTo(0,0);if(b.dataset.imp)setTimeout(()=>$("#cf-files")?.click(),50);break;
     case "cedit":{const x=X.classes.find(y=>y.id===b.dataset.id);if(x){X.form={...clone(x),newName:"",merge:false};X.imp=null;render();window.scrollTo(0,0)}break}
-    case "ccancel":X.form=null;X.imp=null;render();window.scrollTo(0,0);break;
+    case "ccancel":{const back=X.form?.simple;X.form=null;X.imp=null;if(back)S.view=S.mat&&groupsByMat()[S.mat]?"matiere":"matieres";render();window.scrollTo(0,0);break}
+    case "cfpick":{readClasseForm();X.form.matiere=b.dataset.m;const i=$("#cf-mat");if(i)i.value=b.dataset.m;document.querySelectorAll('[data-act="cfpick"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.m===b.dataset.m));cfDeckRefresh("mat");break}
     case "csave":saveClasse();break;
     case "cdel":confirmSheet("Supprimer ce cours suivi ?","Supprimer",async()=>{const id=X.form.id;X.classes=X.classes.filter(x=>x.id!==id);await delDoc("classes/"+id);X.form=null;render()});break;
     case "ccomp":readClasseForm();X.form.comp=+b.dataset.n;render();break;
