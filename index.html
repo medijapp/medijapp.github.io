@@ -1005,6 +1005,7 @@ function tabFiche(d){
   else jblock=`<div class="stack" style="gap:8px">${jStrip(d)}<div class="row"><span class="help">Prochain : <strong>J${info.next}</strong> le ${fmtDate(info.date)}</span>${info.status!=="upcoming"?`<button class="btn small" data-act="jdone">J${info.next} fait</button>`:""}</div></div>`;
   const figs=ficheFigures(d.fiche);
   return `<div class="panel stack" style="margin-bottom:14px"><div class="label">Méthode des J</div>${jPanel(d)}</div>
+  ${methCard(d)}
   ${figs.length?`<div class="panel stack" style="margin-bottom:14px"><div class="label">Schémas · ${figs.length}</div><div class="chips">${figs.map((f,n)=>`<button class="chip" data-act="jump" data-anchor="fig-${n}">${esc(f.cap||"Schéma "+(n+1))}</button>`).join("")}</div></div>`:""}
   ${ficheExtras(d)}
   <div class="panel fiche">${d.fiche?.trim()?md(d.fiche):`<div class="empty">Pas encore de fiche. Écris-la dans l'onglet Modifier.</div>`}</div>`;
@@ -1955,13 +1956,13 @@ async function chronoEnd(){
   const p=c.pauses[c.pauses.length-1];if(p&&!p.e)p.e=Date.now();
   if(c.act){const s={id:uid(),act:c.act.title,kind:c.act.kind,note:c.note||"",ref:c.act.ref,date:c.date||today(),start:new Date(c.startedAt).toISOString(),end:new Date().toISOString(),activeMin:Math.round(c.activeMs/60000),pauseMin:Math.round(c.pauses.reduce((n,x)=>n+(x.e-x.s),0)/60000),pauses:c.pauses.length,est:0,progress:0};
     X.chrono=null;chronoSave();if(s.activeMin>0){X.sessions.push(s);putDoc("sessions/"+s.id,s)}
-    if(c.blockKey)markTaskDone(s.date,c.blockKey,true);
+    if(c.blockKey){markTaskDone(s.date,c.blockKey,true);syncBlockDeck(c.blockKey,true,s.date)}
     if(s.ref){const p=ensurePlan(s.date);if(p){p.fdone={...(p.fdone||{}),[s.ref]:true};await savePlan(s.date)}}
     toast(`${s.act} : ${fmtMin(s.activeMin)} enregistrées`);S.view="home";render();return}
   const s={id:uid(),deckId:c.deckId,date:c.date||today(),start:new Date(c.startedAt).toISOString(),end:new Date().toISOString(),activeMin:Math.round(c.activeMs/60000),pauseMin:Math.round(c.pauses.reduce((n,x)=>n+(x.e-x.s),0)/60000),pauses:c.pauses.length,est:c.est.total,progress:Math.round(chronoProgress(c)*100)/100,steps:c.steps};
   X.chrono=null;chronoSave();
   if(s.activeMin>0){X.sessions.push(s);putDoc("sessions/"+s.id,s);bumpStat("min",s.activeMin)}
-  if(c.blockKey)markTaskDone(c.date||today(),c.blockKey,true);
+  if(c.blockKey){markTaskDone(c.date||today(),c.blockKey,true);syncBlockDeck(c.blockKey,true,c.date||today())}
   const d=getDeck(s.deckId);
   toast(`Séance enregistrée : ${fmtMin(s.activeMin)} · ${Math.round(s.progress*100)}%`);
   if(d&&c.steps.read&&!d.learnedOn){confirmSheet2(`Tu as appris « ${d.name} ». Démarrer la méthode des J (J0 aujourd'hui) ?`,"Oui, J0 aujourd'hui",()=>{d.learnedOn=today();d.jDone=[];markDirty(d.id);toast("J1 prévu demain");render()})}
@@ -2062,6 +2063,11 @@ function schedule(date){
   return X.plans[date];
 }
 function dayTasksPreview(){const p=X.plans[today()];if(p)return p.blocks.filter(b=>!b.done).map(b=>({...b,min:toMin(b.end)-toMin(b.start)}));return tasksFor(today()).slice(0,6)}
+/* un bloc du planning coché/décoché met à jour la méthode des J du cours */
+function syncBlockDeck(key,val,date){const m=String(key||"").match(/^(J(\d+)|learn):(.+)$/);if(!m)return;const dk=getDeck(m[3]);if(!dk)return;
+  if(m[1]==="learn"){if(val&&!dk.learnedOn){dk.learnedOn=date||today();dk.jDone=[];markDirty(dk.id)}return}
+  const j=+m[2];if(!J_STEPS.includes(j)||!dk.learnedOn)return;const set=new Set(dk.jDone||[]);if(val)set.add(j);else set.delete(j);
+  const nx=J_STEPS.filter(x=>set.has(x));if(nx.join()!==(dk.jDone||[]).join()){dk.jDone=nx;markDirty(dk.id)}}
 function markTaskDone(date,key,val){const p=X.plans[date];if(!p)return;let ch=false;p.blocks.forEach(b=>{if(b.key===key&&b.done!==val){b.done=val;ch=true}});if(ch)savePlan(date)}
 function taskSig(date){return tasksFor(date).map(t=>t.key+"/"+t.min).join(",")+"|"+JSON.stringify(fixedFor(date).map(f=>[f.s,f.e]))+"|"+JSON.stringify(X.planning.prefs)}
 function ensurePlan(date){if(!X.planning)return null;const p=X.plans[date];
@@ -3057,16 +3063,31 @@ function ficheObjectifs(d){
 function tabObjectifs(d){
   const O=(d.objectifs&&d.objectifs.length)?d.objectifs:ficheObjectifs(d).map(t=>({obj:t,reponse:"",cle:[]}));
   const ok=d.memoOk||{},hide=!!X.objHide,busy=X.ai["obj-"+d.id];
-  if(!O.length)return `<div class="empty">Ce support ne contient pas d'objectifs. Utilise l'onglet Mémoriser.</div>`;
+  const bi=X.ai["imp-"+d.id];
+  if(!O.length){if(aiOK()&&!bi&&!X.ai["impTried-"+d.id]&&String(d.fiche||"").trim().length>200){X.ai["impTried-"+d.id]=true;setTimeout(()=>doImportants(d),0)}
+    return `<div class="panel stack"><div class="label">Éléments importants du cours</div><p class="help" style="margin:0">Ce cours n'a pas d'objectifs : MédiJ relève les éléments importants à connaître, avec leur réponse tirée du cours.</p>
+    ${bi?`<div class="row"><span class="spin"></span><span class="help">Je relève les éléments importants…</span></div>`:aiOK()?`<button class="btn" data-act="impgen" style="align-self:flex-start">Relever les éléments importants du cours</button>`:noAI}</div>`}
+  const isImp=!!O[0]?.imp;
   const has=O.some(o=>o.reponse),nOk=O.filter((o,i)=>ok["o:"+i]).length;
-  return `<div class="panel stack" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><div class="label">Objectifs du cours · ${O.length}</div><span class="pill ${nOk===O.length?"ok":""}">${nOk}/${O.length} sus</span></div>
+  return `<div class="panel stack" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><div class="label">${isImp?"Éléments importants":"Objectifs du cours"} · ${O.length}</div><span class="pill ${nOk===O.length?"ok":""}">${nOk}/${O.length} sus</span></div>
     <p class="help" style="margin:0">À l'examen, les questions reprennent souvent les objectifs mot pour mot. Pour chacun : la réponse type, construite uniquement avec ton cours.</p>
     ${has?`<div class="chips"><button class="chip" data-act="objmode" data-m="lire" aria-pressed="${!hide}">📖 Lire</button><button class="chip" data-act="objmode" data-m="test" aria-pressed="${hide}">🙈 Me tester</button></div>`
       :aiOK()?`<button class="btn" data-act="objgen" ${busy?"disabled":""} style="align-self:flex-start">${busy?"Je prépare les réponses…":"Prépare les réponses aux objectifs"}</button>`:noAI}</div>
-  ${O.map((o,i)=>{const id="o:"+i,shown=!hide||X.objShow?.[id];return `<div class="memoi objc ${ok[id]?"ok":""}"><div class="label">Objectif ${i+1}</div><div class="memoq">${esc(o.obj)}</div>
+  ${O.map((o,i)=>{const id="o:"+i,shown=!hide||X.objShow?.[id];return `<div class="memoi objc ${ok[id]?"ok":""}"><div class="label">${isImp?"Élément":"Objectif"} ${i+1}</div><div class="memoq">${esc(o.obj)}</div>
     ${o.reponse?(shown?`<div class="fiche objr">${md(o.reponse)}</div>${(o.cle||[]).length?`<div class="objk">🔑 ${o.cle.map(esc).join(" · ")}</div>`:""}<div class="row memob"><button class="btn small ${ok[id]?"":"soft"}" data-act="memook" data-i="${id}" data-v="1">${ok[id]?"✓ Je sais":"Je sais"}</button>${hide||ok[id]?`<button class="btn ghost small" data-act="memook" data-i="${id}" data-v="0">À revoir</button>`:""}</div>`
       :`<button class="memoa hid" data-act="objshow" data-i="${id}">Récite ta réponse, puis touche pour vérifier</button>`):""}</div>`}).join("")}
-  ${has&&aiOK()&&d.objectifs?.[0]?.ia?`<button class="linkbtn" data-act="objgen">Refaire les réponses</button>`:""}`}
+  ${has&&aiOK()&&d.objectifs?.[0]?.ia?`<button class="linkbtn" data-act="${isImp?"impgen":"objgen"}">Refaire ${isImp?"les éléments importants":"les réponses"}</button>`:""}`}
+async function doImportants(d){
+  const k="imp-"+d.id;if(X.ai[k])return;X.ai[k]=true;render();
+  try{const o=await askJSON(`Voici la fiche du cours « ${d.name} » (${d.matiere||""}). Ce cours n'a pas d'objectifs. Relève les 6 à 12 éléments les plus importants à connaître pour l'examen (définitions, classifications, mécanismes, chiffres clés, signes, conduites…), dans l'ordre du cours. Pour chacun : "obj" = la question d'examen correspondante (ex. « Définir… », « Citer… », « Expliquer… »), "reponse" = la réponse type construite UNIQUEMENT avec la fiche (mêmes termes, chiffres exacts ; markdown simple), "cle" = 2 à 4 mots-clés. N'invente rien.
+Réponds en JSON : {"elements":[{"obj":"…","reponse":"…","cle":["…"]}]}
+
+FICHE :
+${String(d.fiche||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").slice(0,60000)}`,{modelTier:"default"});
+    const L=Array.isArray(o)?o:o?.elements||o?.objectifs;if(!Array.isArray(L)||!L.length)throw {code:"invalid_json"};
+    const live=getDeck(d.id);live.objectifs=L.map(x=>({obj:String(x.obj||""),reponse:String(x.reponse||""),cle:(x.cle||[]).map(String),ia:true,imp:true})).filter(x=>x.obj);markDirty(live.id)}
+  catch(e){toast(aiErr(e))}
+  X.ai[k]=false;render()}
 async function doObjectifs(d){
   const k="obj-"+d.id;X.ai[k]=true;render();
   try{const list=ficheObjectifs(d);
@@ -3094,9 +3115,11 @@ function slidesOf(cl,d){
   const t=(cl?.titre||"")+" "+(cl?.notes||""),m=t.match(/(?:diapos?|pages?|slides?)\s*(\d+)\s*(?:à|a|-|–)\s*(\d+)/i);
   if(m){const a=+m[1],b=+m[2];if(b>=a)return b-a+1}
   if(d?.diapos)return +d.diapos;
+  const pg=String((d&&S.src&&S.src.get?.(d.id)?.text)||"").match(/\[(?:Diapo|Page) \d+\]/g);if(pg&&pg.length>2)return pg.length;
   return d?Math.max(10,Math.round(words(plain(d.fiche||""))/45)):20}
 function dayLoad(date){
   const cls=X.classes.filter(e=>e.date===date&&e.deckId&&getDeck(e.deckId));
+  S.decks.forEach(d=>{if(d.learnedOn===date&&!d.example&&!cls.some(e=>e.deckId===d.id))cls.push({deckId:d.id,date,auto:true})});
   const sl=cls.reduce((n,e)=>n+slidesOf(e,getDeck(e.deckId)),0),n=cls.length;
   const lvl=n>=4||sl>100?"lourde":sl>=40||n>=2?"moyenne":n?"légère":"aucune";
   return {n,sl,lvl,cls}}
@@ -3386,13 +3409,38 @@ const MATM=[
   idee:"Toujours la même logique : structure → fonction → application médicale (diagnostic, antibiotiques, vaccins).",
   steps:[["Le schéma de la bactérie (ou du microbe) annoté","Visuel","visuel"],["Les mots","S'entraîner → Lexique","train"],["Pour chaque élément : structure → fonction → intérêt médical","Cours expliqué","lesson"],["Les comparaisons (Gram + / Gram −, eucaryote / procaryote)","S'entraîner → Tableaux cachés","train"],["Les objectifs","Objectifs","obj"],["Flashcards et QCM par partie","Flashcards, QCM","cards"]],
   J:{0:["Schéma de la bactérie + Lexique + fiche","visuel"],1:["Objectifs + Tableaux cachés","obj"],3:["Flashcards par partie + QCM","cards"],7:["Explique comme un prof : structure → fonction","recite"],15:["QCM mélangés","qcm"],30:["Blurting final","recite"]}}];
-function matMeth(m){return MATM.find(x=>x.re.test(m||""))||null}
+const METH_TABS={lesson:"Cours expliqué",fiche:"Fiche synthétique",obj:"Objectifs / éléments importants",train:"S'entraîner (lexique, tableaux cachés, chiffres clés)",flyer:"Flyer",recite:"Réciter (Blurting, explique comme un prof)",simple:"Cours simplifié",visuel:"Visuel (schémas)",memo:"Mémoriser",explain:"Comprendre",cards:"Flashcards",qcm:"QCM"};
+const methKey=m=>normLine(m||"");
+function matMeth(m){if(filMed()){const h=MATM.find(x=>x.re.test(m||""));if(h)return h}
+  const g=(X.planning?.meth||{})[methKey(m)];return g&&g.J?g:null}
+function methMats(){return [...new Set(S.decks.filter(d=>!d.example&&d.matiere&&d.matiere!=="Sans matière").map(d=>d.matiere))].sort((a,b)=>a.localeCompare(b,"fr"))}
+async function methGen(mat){const k="meth-"+methKey(mat);if(X.ai[k])return;X.ai[k]=true;render();
+  try{const chap=S.decks.filter(d=>d.matiere===mat).map(d=>d.name).slice(0,15);
+    const o=await askJSON(`Crée la méthode de révision de la matière « ${mat} » pour un(e) étudiant(e) en ${filiere()||"médecine"}. Chapitres : ${chap.join(" ; ")||"—"}.
+Adapte-la vraiment à cette matière ET à cette filière (pas de cas cliniques, de SITECHIA ni de triades si la filière ne s'y prête pas).
+Les outils disponibles dans l'appli, avec leur code : ${Object.entries(METH_TABS).map(([c,n])=>c+" = "+n).join(" ; ")}. N'utilise QUE ces codes.
+Réponds en JSON : {"ic":"un émoji","idee":"l'idée clé de la méthode en 1 à 2 phrases","steps":[["étape courte","nom de l'outil","code"]] (4 à 6 étapes),"J":{"0":["quoi faire le jour du cours","code"],"1":[…],"3":[…],"7":[…],"15":[…],"30":[…]}}. Phrases courtes et concrètes, en français.`,{modelTier:"default"});
+    const ok=t=>METH_TABS[t]?t:"fiche";
+    if(!o||!Array.isArray(o.steps)||!o.J)throw {code:"invalid_json"};
+    const M={nom:mat,ic:String(o.ic||"📘").slice(0,4),idee:String(o.idee||""),gen:true,
+      steps:o.steps.slice(0,6).filter(x=>Array.isArray(x)&&x[0]).map(x=>[String(x[0]),String(x[1]||METH_TABS[ok(x[2])]),ok(x[2])]),J:{}};
+    [0,...J_STEPS].forEach(j=>{const v=o.J[j]||o.J[String(j)];M.J[j]=Array.isArray(v)&&v[0]?[String(v[0]),ok(v[1])]:[MAJ[j].t,MAJ[j].tab]});
+    (X.planning.meth??={})[methKey(mat)]=M;await savePlanning();toast("Méthode créée pour "+mat)}
+  catch(e){toast(aiErr(e))}
+  X.ai[k]=false;render()}
 function stepFor(d,n){const M=matMeth(d.matiere);if(M&&M.J[n])return {t:M.J[n][0],tab:M.J[n][1]};return MAJ[n]}
-function methCard(d){const M=matMeth(d.matiere);if(!M)return "";
+function methCard(d){const M=matMeth(d.matiere);
+  if(!M){if(!d.matiere||d.matiere==="Sans matière"||d.example)return "";const busy=X.ai["meth-"+methKey(d.matiere)];
+    return `<div class="panel mcard"><strong>📘 Ma méthode en ${esc(d.matiere)}</strong><p class="help" style="margin:6px 0">MédiJ peut créer une méthode adaptée à cette matière et à ta filière : quoi faire à chaque J.</p>${aiOK()?`<button class="btn soft small" data-act="methgen" data-m="${esc(d.matiere)}" ${busy?"disabled":""}>${busy?"Je crée ta méthode…":"Créer ma méthode pour cette matière"}</button>`:noAI}</div>`}
   return `<details class="panel mcard" ${X.mcOpen?"open":""}><summary><strong>${M.ic} Ma méthode en ${esc(M.nom)}</strong></summary><p class="help" style="margin:6px 0">${esc(M.idee)}</p>
     <ol class="pqc">${M.steps.map(([t,o,tab])=>`<li><strong>${esc(t)}</strong><br><button class="linkbtn" data-act="tab" data-t="${tab}">→ ${esc(o)}</button></li>`).join("")}</ol></details>`}
-function methAll(){return `<div class="section"><h2>Ma méthode par matière</h2>${MATM.map(M=>`<details class="panel mstep"><summary><strong>${M.ic} ${esc(M.nom)}</strong></summary><p class="help" style="margin:6px 0">${esc(M.idee)}</p><ol class="pqc">${M.steps.map(([t,o])=>`<li><strong>${esc(t)}</strong> <span class="muted">· ${esc(o)}</span></li>`).join("")}</ol>
-  <div class="label" style="margin-top:8px">Au planning</div><ul class="mlist">${[0,...J_STEPS].map(j=>`<li><strong>J${j}</strong> : ${esc(M.J[j][0])}</li>`).join("")}</ul></details>`).join("")}</div>`}
+function methAll(){const mine=methMats(),hard=filMed()?MATM.filter(M=>!mine.length||mine.some(m=>M.re.test(m))):[];
+  const gen=mine.filter(m=>!hard.some(M=>M.re.test(m)));
+  const one=M=>`<details class="panel mstep"><summary><strong>${M.ic} ${esc(M.nom)}</strong></summary><p class="help" style="margin:6px 0">${esc(M.idee)}</p><ol class="pqc">${M.steps.map(([t,o])=>`<li><strong>${esc(t)}</strong> <span class="muted">· ${esc(o)}</span></li>`).join("")}</ol>
+  <div class="label" style="margin-top:8px">Au planning</div><ul class="mlist">${[0,...J_STEPS].map(j=>`<li><strong>J${j}</strong> : ${esc((M.J[j]||[MAJ[j].t])[0])}</li>`).join("")}</ul>${M.gen&&aiOK()?`<button class="linkbtn" data-act="methgen" data-m="${esc(M.nom)}">Refaire cette méthode</button>`:""}</details>`;
+  return `<div class="section"><h2>Ma méthode par matière</h2>${hard.map(one).join("")}${gen.map(m=>{const M=matMeth(m);if(M)return one(M);const busy=X.ai["meth-"+methKey(m)];
+    return `<div class="panel mstep row" style="justify-content:space-between"><strong>📘 ${esc(m)}</strong>${aiOK()?`<button class="btn soft small" data-act="methgen" data-m="${esc(m)}" ${busy?"disabled":""}>${busy?"Création…":"Créer la méthode"}</button>`:""}</div>`}).join("")}
+  ${!hard.length&&!gen.length?`<p class="help">Ajoute tes cours avec leur matière : MédiJ te proposera une méthode adaptée à chacune.</p>`:""}</div>`}
 
 /* ---------- Fiche : notes du prof, mémorisation, chrono ---------- */
 function ficheExtras(d){
@@ -3471,6 +3519,8 @@ document.addEventListener("click",async e=>{
     case "objmode":X.objHide=b.dataset.m==="test";X.objShow={};render();break;
     case "objshow":X.objShow={...(X.objShow||{}),[b.dataset.i]:true};render();break;
     case "objgen":if(d)doObjectifs(d);break;
+    case "impgen":if(d)doImportants(d);break;
+    case "methgen":methGen(b.dataset.m);break;
     case "memomode":X.memoHide=b.dataset.m==="test";X.memoShow={};render();break;
     case "memotodo":X.memoTodo=!X.memoTodo;render();break;
     case "memoshow":X.memoShow={...(X.memoShow||{}),[b.dataset.i]:true};render();break;
@@ -3495,7 +3545,7 @@ document.addEventListener("click",async e=>{
     case "auexp":if(X.au){X.au.min=false;auBar()}break;
     case "auclose":auClose();break;
     /* hooks sur les actions existantes */
-    case "jdone":if(d){const n=(d.jDone||[])[d.jDone.length-1];markTaskDone(today(),`J${n}:${d.id}`,true)}break;
+    case "jdone":if(d&&(d.jDone||[]).length){const n=d.jDone[d.jDone.length-1];markTaskDone(today(),`J${n}:${d.id}`,true)}break;
     case "learned":if(d)markTaskDone(today(),"learn:"+d.id,true);break;
     case "endsession":break;
     /* En classe */
@@ -3576,7 +3626,7 @@ document.addEventListener("click",async e=>{
     case "nlgo":{const el=$("#nl-in");if(el)nlEdit(el.value);break}
     case "nlundo":{const u=X.nl?.undo;if(u){X.planning=u.P;X.plans=u.plans;await savePlanning();const dt=today();schedule(dt);await savePlan(dt);X.nl={msg:"Changement annulé"};render()}break}
     case "fdone":{const dt=b.dataset.date||today();const p=ensurePlan(dt);if(!p)break;p.fdone={...(p.fdone||{})};if(p.fdone[b.dataset.ref])delete p.fdone[b.dataset.ref];else p.fdone[b.dataset.ref]=true;await savePlan(dt);render();break}
-    case "bdone":{const dt=b.dataset.date||X.plDate||today();const p=X.plans[dt];const bl=p?.blocks.find(x=>x.id===b.dataset.id);if(bl){bl.done=!bl.done;await savePlan(dt);render()}break}
+    case "bdone":{const dt=b.dataset.date||X.plDate||today();const p=X.plans[dt];const bl=p?.blocks.find(x=>x.id===b.dataset.id);if(bl){bl.done=!bl.done;syncBlockDeck(bl.key,bl.done,dt);await savePlan(dt);if(bl.done&&/^J\d+:/.test(bl.key||""))toast(bl.key.split(":")[0]+" validé pour ce cours");render()}break}
     case "pldel":{const P=X.planning,l=b.dataset.l;P[l]=(P[l]||[]).filter(x=>x.id!==b.dataset.id);P.removed=[...new Set([...(P.removed||[]),b.dataset.id])];await savePlanning();render();break}
     case "pladd":{const l=b.dataset.l,v=id=>document.getElementById(id+"-"+l);const P=X.planning;const s=validT(v("if-s").value),en=validT(v("if-e").value),title=v("if-title").value.trim();
       if(!title||!s||!en||toMin(en)<=toMin(s)){toast("Titre, début et fin (après le début) sont nécessaires");break}
