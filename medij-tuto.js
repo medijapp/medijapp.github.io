@@ -3,15 +3,15 @@
   var KEY = "medij-tuto-vu";
   var STEPS = [
     { ic: "👋", t: "Bienvenue sur MédiJ !", d: "En 1 minute, découvre comment MédiJ t'aide à réviser chaque jour sans te perdre." },
-    { ic: "📥", t: "1. Importe tes cours", d: "Va dans <strong>En classe</strong> puis <strong>Importer un support</strong>. Ajoute ton cours : PDF, PowerPoint, Word ou photos." },
+    { ic: "📥", t: "1. Importe tes cours", d: "Va dans <strong>Matières</strong> puis touche <strong>📥 Importer un cours</strong>. Ajoute ton cours : PDF, PowerPoint, Word ou photos." },
     { ic: "✨", t: "2. MédiJ prépare tout", d: "Appuie sur <strong>Créer la fiche, les flashcards et les QCM</strong> : MédiJ fait ta fiche de synthèse, tes flashcards et des QCM à partir de <strong>ton</strong> cours." },
     { ic: "📚", t: "3. Révise par matière", d: "Dans <strong>Matières</strong>, ouvre un chapitre et choisis : <strong>Fiche</strong>, <strong>Flashcards</strong> ou <strong>QCM</strong>. Tu peux aussi corriger ou ajouter tes propres cartes." },
     { ic: "📅", t: "4. La méthode des J", d: "Quand tu as appris un chapitre, MédiJ te le fait revoir à <strong>J1, J3, J7, J15 et J30</strong>. Chaque matin, l'onglet <strong>Aujourd'hui</strong> te dit quoi réviser." },
     { ic: "🎯", t: "5. Le défi du jour", d: "Sur <strong>Aujourd'hui</strong>, le bouton jaune lance 10 QCM tirés de tes cours. Fais-le chaque jour pour garder ta <strong>série 🔥</strong> et gagner des <strong>badges 🏅</strong>." },
     { ic: "🗓️", t: "6. Ton emploi du temps", d: "Va dans <strong>Planning</strong>, puis l'onglet <strong>Emploi du temps</strong>, et appuie sur <strong>Choisir un fichier</strong> : envoie une photo, une capture ou le PDF de ton emploi du temps. MédiJ trouve tes cours et organise tes révisions autour." },
-    { ic: "⏱️", t: "7. Planning et Chrono", d: "<strong>Planning</strong> te montre ton programme du jour et de la semaine. <strong>Chrono</strong> chronomètre tes sessions de travail." },
+    { ic: "⏱️", t: "7. Planning et Chrono", d: "<strong>Planning</strong> te montre ton programme du jour et de la semaine. Le <strong>chrono</strong> se lance depuis une révision (bouton « Lancer le chrono » dans la fiche)." },
     { ic: "📲", t: "8. Installe MédiJ", d: "Dans ton navigateur, choisis <strong>« Ajouter à l'écran d'accueil »</strong> (ou « Installer l'application ») : MédiJ s'ouvrira comme une vraie appli." },
-    { ic: "🚀", t: "C'est parti !", d: "Commence par importer ton premier cours dans <strong>En classe</strong>. Sur chaque page, une astuce t'expliquera quoi faire. Et le bouton <strong>❓ Aide</strong> répond à tes questions. Bonnes révisions !" }
+    { ic: "🚀", t: "C'est parti !", d: "Commence par importer ton premier cours : <strong>Matières</strong> → <strong>📥 Importer un cours</strong>. Sur chaque page, une astuce t'expliquera quoi faire. Et le bouton <strong>❓ Aide</strong> répond à tes questions. Bonnes révisions !" }
   ];
   var css = "#mt-o{position:fixed;inset:0;z-index:45;background:rgba(74,26,44,.72);display:flex;align-items:center;justify-content:center;padding:18px;font-family:system-ui,-apple-system,sans-serif}" +
     "#mt-b{background:#fff;color:#1f1a22;border-radius:24px;max-width:420px;width:100%;padding:26px 22px 20px;display:flex;flex-direction:column;gap:14px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}" +
@@ -61,7 +61,7 @@
   var WA = "https://wa.me/221781718876";
   var TIPS = {
     home: { t: "Aujourd'hui", d: "Ici, MédiJ te montre <strong>ce que tu dois réviser aujourd'hui</strong> (méthode des J et flashcards à revoir). Le bouton jaune lance ton <strong>défi du jour</strong>." },
-    matieres: { t: "Matières", d: "Tous tes chapitres, rangés par matière. Ouvre un chapitre pour voir sa <strong>Fiche</strong>, ses <strong>Flashcards</strong> et ses <strong>QCM</strong>. <strong>+ Chapitre</strong> crée un chapitre vide à remplir toi-même. Pour importer un cours, va plutôt dans <strong>En classe</strong>." },
+    matieres: { t: "Matières", d: "Tous tes chapitres, rangés par matière. Ouvre un chapitre pour voir sa <strong>Fiche</strong>, ses <strong>Flashcards</strong> et ses <strong>QCM</strong>. <strong>+ Chapitre</strong> crée un chapitre vide à remplir toi-même. Pour importer un cours, touche plutôt <strong>📥 Importer un cours</strong>." },
     classe: { t: "En classe : importer tes cours", d: "C'est ici que tu <strong>importes tes cours</strong> : appuie sur <strong>Importer un support</strong>, choisis ton fichier (PDF, PowerPoint, Word ou photos), indique la matière et le titre, puis appuie sur <strong>Créer la fiche, les flashcards et les QCM</strong>." },
     plan: { t: "Planning", d: "Ton programme de révision du jour et de la semaine. Un <strong>imprévu</strong> ? Écris-le dans <strong>Dis-moi ce qui change</strong> (ex. « imprévu demain de 14h à 16h »). Tes cours de la fac : onglet <strong>Emploi du temps</strong>. Tes habitudes : onglet <strong>Habitudes et réglages</strong>." },
     edt: { t: "Ton emploi du temps", d: "Appuie sur <strong>Choisir un fichier</strong> et envoie une <strong>photo, une capture ou le PDF</strong> de ton emploi du temps. Tu préfères l'écrire ? Tout en bas : <strong>+ Ajouter un cours à la main</strong>." },
@@ -69,9 +69,9 @@
     timer: { t: "Chrono", d: "Choisis un chapitre et lance le chronomètre pendant que tu révises. Ton temps de travail est compté dans tes statistiques." }
   };
   var FAQ = [
-    ["📥 Comment importer un cours ?", "<strong>En classe</strong> → <strong>Importer un support</strong> → choisis ton fichier → indique la matière et le titre → <strong>Créer la fiche, les flashcards et les QCM</strong>."],
+    ["📥 Comment importer un cours ?", "<strong>Matières</strong> → <strong>📥 Importer un cours</strong> → choisis ton fichier → indique la matière et le titre → <strong>Créer la fiche, les flashcards et les QCM</strong>."],
     ["📝 Comment créer une fiche moi-même ?", "<strong>Matières</strong> → <strong>+ Chapitre</strong>, puis dans le chapitre, l'onglet <strong>Modifier</strong> pour écrire ta fiche, ajouter des flashcards ou des QCM."],
-    ["🧩 Comment avoir des schémas de mon cours ?", "Ouvre un chapitre dans <strong>Matières</strong> → onglet <strong>Visuel</strong> → <strong>✨ Générer les schémas du chapitre</strong>. Pour un schéma précis, écris le sujet dans <strong>Un schéma sur…</strong> (ex. « physiopathologie de l'ictère ») puis <strong>Créer</strong>."],
+    ["🧩 Comment avoir des schémas de mon cours ?", "Ouvre un chapitre dans <strong>Matières</strong> → onglet <strong>Fiche</strong> : les schémas de ton cours y sont repris. Tu peux choisir les schémas à garder au moment de l'import."],
     ["🗓️ Comment importer mon emploi du temps ?", "<strong>Planning</strong> → onglet <strong>Emploi du temps</strong> → <strong>Choisir un fichier</strong> (photo, capture ou PDF) → vérifie les cours trouvés → enregistre."],
     ["✍️ Écrire mon emploi du temps à la main ?", "<strong>Planning</strong> → onglet <strong>Emploi du temps</strong> → tout en bas, <strong>+ Ajouter un cours à la main</strong> : nom du cours, jour, CM/TD/TP, lieu, heure de début et de fin → <strong>Ajouter</strong>."],
     ["🔁 Ajouter mes habitudes (sommeil, prière, sport…) ?", "<strong>Planning</strong> → onglet <strong>Habitudes et réglages</strong> → partie <strong>Habitudes</strong> → <strong>+ Ajouter une habitude à la main</strong> : nom, jours de la semaine, heures → <strong>Ajouter</strong>."],

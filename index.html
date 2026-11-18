@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118183000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118190000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -866,7 +866,7 @@ function searchBox(id,val,ph){return `<label class="searchbar">${IC.search}<inpu
 function renderTabbar(){
   const tb=$("#tabbar");
   const cur=S.view==="deck"||S.view==="new"||S.view==="matiere"||S.view==="search"||S.view==="synd"?"matieres":S.view==="revise"?"home":S.view;
-  const items=[["home","Aujourd'hui",IC.today],["matieres","Matières",IC.book],["classe","En classe",IC.classe],["plan","Planning",IC.plan],["timer","Chrono",IC.timer]];
+  const items=[["home","Aujourd'hui",IC.today],["matieres","Matières",IC.book],["plan","Planning",IC.plan]];
   tb.innerHTML=items.map(([v,l,i])=>`<button data-act="nav" data-v="${v}" ${cur===v?'aria-current="page"':""}>${i}<span>${l}</span></button>`).join("");
 }
 function jStrip(d){
@@ -915,7 +915,7 @@ function perDecks(){const p=curPer();return S.decks.filter(d=>perOf(d)===p)}
 function groupsByMat(){const g={};perDecks().forEach(d=>{(g[d.matiere||"Sans matière"]??=[]).push(d)});return g}
 function viewMatieres(){
   const groups=groupsByMat(),keys=Object.keys(groups);
-  return topbar("Matières")+`<div class="row" style="justify-content:space-between;margin-bottom:14px"><h1>Mes matières · ${esc(curPer())}</h1><button class="btn" data-act="new">+ Chapitre</button></div>
+  return topbar("Matières")+`<div class="row" style="justify-content:space-between;margin-bottom:14px"><h1>Mes matières · ${esc(curPer())}</h1><span class="row" style="gap:6px"><button class="btn" data-act="cnew" data-imp="1">📥 Importer un cours</button><button class="btn ghost small" data-act="new">+ Chapitre</button></span></div>
   <div class="chips" style="margin-bottom:14px">${allPers().map(p=>`<button class="chip" data-act="perset" data-p="${esc(p)}" aria-pressed="${p===curPer()}">${esc(p)} <span style="opacity:.7">· ${S.decks.filter(d=>perOf(d)===p).length}</span></button>`).join("")}<button class="chip" data-act="peradd">+ Semestre</button></div>
   ${searchBox("hq","","Chercher dans toutes les matières…")}
   ${filCas()?`<button class="mini" data-act="casview" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· tous les cours vus</span></span><span class="pill">→</span></button>`:""}
@@ -977,6 +977,7 @@ function viewNew(){
 }
 function viewDeck(){
   const d=getDeck(S.deckId); if(!d){S.view="matieres";return viewMatieres()}
+  S.tab=tabAlias(S.tab);
   const tabs=[["source","Cours source"],["fiche","Fiche synthétique"],["obj","Objectifs"],["train","🩺 S'entraîner"],["flyer","Flyer"],["recite","Réciter"],["simple","Cours simplifié"],["lesson","Cours expliqué"],["visuel","Visuel"],["memo","Mémoriser"],["explain","Comprendre"],["cards","Flashcards"],["qcm","QCM"],["cov","Couverture"],["edit","Modifier"]];
   let body="";
   if(S.tab==="fiche")body=tabFicheTop(d);
@@ -3050,8 +3051,9 @@ function synthView(d){const Y=d.synth;let n=0;
   ${Y.blocks.map(b=>syBlock(b,b.titre?++n:n)).join("")}
   ${Y.comp?`<p class="sy-note">ℹ️ ${md(Y.comp)}</p>`:""}</div>
   <div class="row" style="gap:8px;margin-top:10px"><button class="btn soft small" data-act="syprint">🖨️ Imprimer / PDF</button></div>`}
-function tabFicheTop(d){if(!d.synth)return tabFiche(d);const m=(X.syMode??={})[d.id]||"memo";
-  return `<div class="seg tu-seg" style="margin-bottom:12px"><button aria-selected="${m==="memo"}" data-act="symode" data-v="memo">🗂️ Fiche mémo</button><button aria-selected="${m==="full"}" data-act="symode" data-v="full">📄 Fiche détaillée</button></div>`+(m==="memo"?synthView(d):tabFiche(d))}
+const objBlock=d=>`<details class="panel" open style="margin-top:14px"><summary><strong>🎯 Objectifs et éléments importants</strong></summary><div style="margin-top:10px">${tabObjectifs(d)}</div></details>`;
+function tabFicheTop(d){if(!d.synth)return tabFiche(d)+objBlock(d);const m=(X.syMode??={})[d.id]||"memo";
+  return `<div class="seg tu-seg" style="margin-bottom:12px"><button aria-selected="${m==="memo"}" data-act="symode" data-v="memo">🗂️ Fiche mémo</button><button aria-selected="${m==="full"}" data-act="symode" data-v="full">📄 Fiche détaillée</button></div>`+(m==="memo"?synthView(d):tabFiche(d))+objBlock(d)}
 
 /* ---------- Objectifs : chaque objectif du cours avec sa réponse type, à mémoriser ---------- */
 function ficheObjectifs(d){
@@ -3106,11 +3108,11 @@ ${String(d.fiche||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").slice(0,60000)}`,{mode
 
 /* ---------- Méthode Major : révisions adaptées à la charge du jour (nombre de cours × nombre de diapos) ---------- */
 const MAJ={0:{t:"Comprendre + Blurting",tab:"lesson",how:"Lis le Cours expliqué puis la fiche. Ferme tout et fais un Blurting : écris de mémoire tout ce que tu as retenu, puis compare."},
-  1:{t:"Objectifs + flashcards",tab:"obj",how:"Récite chaque objectif à voix haute (mode Me tester), puis les flashcards dues."},
+  1:{t:"Objectifs + flashcards",tab:"fiche",how:"Dans la Fiche, récite chaque objectif ou élément important (mode Me tester), puis les flashcards dues."},
   3:{t:"QCM + Blurting",tab:"qcm",how:"Fais les QCM du chapitre, puis un Blurting sur les parties où tu t'es trompée."},
-  7:{t:"Explique-le comme un prof",tab:"recite",how:"Méthode Feynman : explique le cours avec tes mots, comme si tu le faisais à une camarade. La correction te montre ce qui manque."},
-  15:{t:"QCM mélangés + points faibles",tab:"memo",how:"Mémoriser en mode « Seulement ceux à revoir », puis examen blanc mélangé dans Révisions ciblées."},
-  30:{t:"Blurting final",tab:"recite",how:"Blurting sur tout le chapitre, sans rien regarder. Objectif : plus de 85 %."}};
+  7:{t:"Explique-le comme un prof",tab:"lesson",how:"Méthode Feynman : explique le cours avec tes mots, comme si tu le faisais à une camarade. La correction te montre ce qui manque."},
+  15:{t:"QCM mélangés + points faibles",tab:"qcm",how:"Refais les QCM et les flashcards ratés, puis un examen blanc mélangé dans Révisions ciblées."},
+  30:{t:"Blurting final",tab:"fiche",how:"Blurting sur tout le chapitre, sans rien regarder. Objectif : plus de 85 %."}};
 function slidesOf(cl,d){
   const t=(cl?.titre||"")+" "+(cl?.notes||""),m=t.match(/(?:diapos?|pages?|slides?)\s*(\d+)\s*(?:à|a|-|–)\s*(\d+)/i);
   if(m){const a=+m[1],b=+m[2];if(b>=a)return b-a+1}
@@ -3409,7 +3411,7 @@ const MATM=[
   idee:"Toujours la même logique : structure → fonction → application médicale (diagnostic, antibiotiques, vaccins).",
   steps:[["Le schéma de la bactérie (ou du microbe) annoté","Visuel","visuel"],["Les mots","S'entraîner → Lexique","train"],["Pour chaque élément : structure → fonction → intérêt médical","Cours expliqué","lesson"],["Les comparaisons (Gram + / Gram −, eucaryote / procaryote)","S'entraîner → Tableaux cachés","train"],["Les objectifs","Objectifs","obj"],["Flashcards et QCM par partie","Flashcards, QCM","cards"]],
   J:{0:["Schéma de la bactérie + Lexique + fiche","visuel"],1:["Objectifs + Tableaux cachés","obj"],3:["Flashcards par partie + QCM","cards"],7:["Explique comme un prof : structure → fonction","recite"],15:["QCM mélangés","qcm"],30:["Blurting final","recite"]}}];
-const METH_TABS={lesson:"Cours expliqué",fiche:"Fiche synthétique",obj:"Objectifs / éléments importants",train:"S'entraîner (lexique, tableaux cachés, chiffres clés)",flyer:"Flyer",recite:"Réciter (Blurting, explique comme un prof)",simple:"Cours simplifié",visuel:"Visuel (schémas)",memo:"Mémoriser",explain:"Comprendre",cards:"Flashcards",qcm:"QCM"};
+const METH_TABS={fiche:"Fiche (avec objectifs et éléments importants)",lesson:"Cours expliqué",cards:"Flashcards",qcm:"QCM"};
 const methKey=m=>normLine(m||"");
 function matMeth(m){if(filMed()){const h=MATM.find(x=>x.re.test(m||""));if(h)return h}
   const g=(X.planning?.meth||{})[methKey(m)];return g&&g.J?g:null}
@@ -3433,10 +3435,10 @@ function methCard(d){const M=matMeth(d.matiere);
   if(!M){if(!d.matiere||d.matiere==="Sans matière"||d.example)return "";const busy=X.ai["meth-"+methKey(d.matiere)];
     return `<div class="panel mcard"><strong>📘 Ma méthode en ${esc(d.matiere)}</strong><p class="help" style="margin:6px 0">MédiJ peut créer une méthode adaptée à cette matière et à ta filière : quoi faire à chaque J.</p>${aiOK()?`<button class="btn soft small" data-act="methgen" data-m="${esc(d.matiere)}" ${busy?"disabled":""}>${busy?"Je crée ta méthode…":"Créer ma méthode pour cette matière"}</button>`:noAI}</div>`}
   return `<details class="panel mcard" ${X.mcOpen?"open":""}><summary><strong>${M.ic} Ma méthode en ${esc(M.nom)}</strong></summary><p class="help" style="margin:6px 0">${esc(M.idee)}</p>
-    <ol class="pqc">${M.steps.map(([t,o,tab])=>`<li><strong>${esc(t)}</strong><br><button class="linkbtn" data-act="tab" data-t="${tab}">→ ${esc(o)}</button></li>`).join("")}</ol></details>`}
+    <ol class="pqc">${M.steps.map(([t,o,tab])=>`<li><strong>${esc(t)}</strong><br><button class="linkbtn" data-act="tab" data-t="${tabAlias(tab)}">→ ${esc(TAB_NAME[tabAlias(tab)]||o)}</button></li>`).join("")}</ol></details>`}
 function methAll(){const mine=methMats(),hard=filMed()?MATM.filter(M=>!mine.length||mine.some(m=>M.re.test(m))):[];
   const gen=mine.filter(m=>!hard.some(M=>M.re.test(m)));
-  const one=M=>`<details class="panel mstep"><summary><strong>${M.ic} ${esc(M.nom)}</strong></summary><p class="help" style="margin:6px 0">${esc(M.idee)}</p><ol class="pqc">${M.steps.map(([t,o])=>`<li><strong>${esc(t)}</strong> <span class="muted">· ${esc(o)}</span></li>`).join("")}</ol>
+  const one=M=>`<details class="panel mstep"><summary><strong>${M.ic} ${esc(M.nom)}</strong></summary><p class="help" style="margin:6px 0">${esc(M.idee)}</p><ol class="pqc">${M.steps.map(([t,o,tab])=>`<li><strong>${esc(t)}</strong> <span class="muted">· ${esc(TAB_NAME[tabAlias(tab)]||o)}</span></li>`).join("")}</ol>
   <div class="label" style="margin-top:8px">Au planning</div><ul class="mlist">${[0,...J_STEPS].map(j=>`<li><strong>J${j}</strong> : ${esc((M.J[j]||[MAJ[j].t])[0])}</li>`).join("")}</ul>${M.gen&&aiOK()?`<button class="linkbtn" data-act="methgen" data-m="${esc(M.nom)}">Refaire cette méthode</button>`:""}</details>`;
   return `<div class="section"><h2>Ma méthode par matière</h2>${hard.map(one).join("")}${gen.map(m=>{const M=matMeth(m);if(M)return one(M);const busy=X.ai["meth-"+methKey(m)];
     return `<div class="panel mstep row" style="justify-content:space-between"><strong>📘 ${esc(m)}</strong>${aiOK()?`<button class="btn soft small" data-act="methgen" data-m="${esc(m)}" ${busy?"disabled":""}>${busy?"Création…":"Créer la méthode"}</button>`:""}</div>`}).join("")}
@@ -3483,7 +3485,7 @@ document.addEventListener("click",async e=>{
     case "lsall":if(d){(X.lesAll??={})[d.id]=!X.lesAll[d.id];render()}break;
     case "rcstep":if(d){const n=recParts(d).length,c=+(X.rcSec?.[d.id]||0),v=Math.max(0,Math.min(n-1,c+ +b.dataset.v));(X.rcSec??={})[d.id]=String(v);(X.rcRes??={})[d.id]=null;render();window.scrollTo(0,0)}break;
     case "dgroup":{const G=DECK_GROUPS.find(x=>x[0]===b.dataset.g);if(G){const k=G[2][0][0];if(k==="cmp"){X.trSec="tab";X.trOnlyTab=true;S.tab="train"}else{if(k==="train"){X.trSec="";X.trOnlyTab=false}S.tab=k}render()}}break;
-    case "dtab":{const k=b.dataset.t;if(k==="cmp"){X.trSec="tab";X.trHideT=false;X.trOnlyTab=true;S.tab="train"}else{if(k==="train"){X.trOnlyTab=false;if(X.trSec==="tab")X.trSec=""}S.tab=k}render()}break;
+    case "dtab":{const k=b.dataset.t;if(k==="cas"){X.casMat=d?.matiere||"";X.casOpen=null;S.view="cas";render();window.scrollTo(0,0);break}if(k==="cmp"){X.trSec="tab";X.trHideT=false;X.trOnlyTab=true;S.tab="train"}else{if(k==="train"){X.trOnlyTab=false;if(X.trSec==="tab")X.trSec=""}S.tab=k}render()}break;
     case "casview":X.casMat=b.dataset.m||"";X.casOpen=null;S.view="cas";render();window.scrollTo(0,0);break;
     case "casmat":X.casMat=b.dataset.m||"";render();break;
     case "casopen":X.casOpen={d:b.dataset.d,c:b.dataset.c};delete (X.casAns??={})[b.dataset.d+"|"+b.dataset.c];render();window.scrollTo(0,0);break;
@@ -3680,9 +3682,14 @@ const DECK_GROUPS=[["c","1 · Comprendre",[["lesson","Cours expliqué"],["simple
 function deckNav(){const t=S.tab==="train"&&X.trSec==="tab"&&X.trOnlyTab?"cmp":S.tab;const g=DECK_GROUPS.find(G=>G[2].some(x=>x[0]===t))||DECK_GROUPS[0];
   return `<div class="dnav">${DECK_GROUPS.map(G=>`<button class="dnav-g" data-act="dgroup" data-g="${G[0]}" aria-selected="${G===g}">${G[1]}</button>`).join("")}</div>
   <div class="chips dnav-s">${g[2].map(([k,l])=>`<button class="chip" data-act="dtab" data-t="${k}" aria-pressed="${t===k}">${l}</button>`).join("")}</div>`}
-const DECK_TABS=[["source","Cours source"],["fiche","Fiche synthétique"],["obj","Objectifs"],0,["lesson","Cours expliqué"],["simple","Cours simplifié"],["visuel","Visuel"],0,["cmp","📊 Tableaux"],["flyer","Flyer"],0,["cards","Flashcards"],["recite","Réciter"],["memo","Mémoriser"],0,["qcm","QCM"],["train","🩺 S'entraîner"],0,["explain","Comprendre"],["cov","Couverture"],["edit","Modifier"]];
-function deckNav2(){const t=S.tab==="train"&&X.trSec==="tab"&&X.trOnlyTab?"cmp":S.tab;
-  return `<div class="seg" role="tablist">${DECK_TABS.map(x=>x?`<button role="tab" data-act="dtab" data-t="${x[0]}" aria-selected="${t===x[0]}">${x[1]}</button>`:`<span class="seg-sep"></span>`).join("")}</div>`}
+/* MédiJ simplifié : seuls ces outils sont visibles ; les autres sont masqués (pas supprimés) */
+const DECK_TABS=[["fiche","Fiche"],["lesson","Cours expliqué"],["cards","Flashcards"],["qcm","QCM"],["cas","🧑‍⚕️ Cas cliniques"],["edit","Modifier"]];
+const TAB_OK=new Set(["fiche","lesson","cards","qcm","edit","source","explain"]);
+const TAB_ALIAS={obj:"fiche",train:"qcm",cmp:"fiche",flyer:"fiche",recite:"cards",simple:"lesson",visuel:"fiche",memo:"cards",cov:"fiche"};
+const tabAlias=t=>TAB_OK.has(t)?t:(TAB_ALIAS[t]||"fiche");
+const TAB_NAME={fiche:"Fiche (objectifs inclus)",lesson:"Cours expliqué",cards:"Flashcards",qcm:"QCM"};
+function deckNav2(){const t=S.tab;
+  return `<div class="seg" role="tablist">${DECK_TABS.filter(x=>x[0]!=="cas"||filCas()).map(x=>x?`<button role="tab" data-act="dtab" data-t="${x[0]}" aria-selected="${t===x[0]}">${x[1]}</button>`:`<span class="seg-sep"></span>`).join("")}</div>`}
 renderTabbar();
 boot().then(bootExtras);
 </script>
