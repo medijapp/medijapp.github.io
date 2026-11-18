@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118193000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118194500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1051,7 +1051,14 @@ function tabCov(d){
   <div class="stack" style="gap:8px">${c.secs.map(x=>`<div class="cov ${x.status}"><div class="row" style="justify-content:space-between"><strong style="min-width:0;overflow-wrap:anywhere">${esc(x.h)}</strong><span class="pill">${lab[x.status]}${x.items.length?" · "+x.items.filter(i=>i.ok).length+"/"+x.items.length:""}</span></div>
     ${x.items.length?`<div>${x.items.map(i=>`<span class="tag ${i.ok?"okt":""}" title="${i.kind}">${i.ok?"✓":"✗"} ${esc(i.kind==="titre"?"titre":i.label)}</span>`).join("")}</div>`:`<div class="help">Aucun chiffre ni sigle à contrôler : à relire toi-même.</div>`}</div>`).join("")}</div>`;
 }
-function tabCards(d){
+/* bouton « créer depuis le cours » en haut des flashcards et des QCM */
+function genBar(d,what){const sess=S.session&&S.session.deckId===d.id&&S.session.type===what;if(sess||d.example)return "";
+  const n=what==="qcm"?(d.qcm||[]).length:(d.cards||[]).length,hasSrc=!!(S.src.get(d.id)?.text||"").trim()||!!(d.fiche||"").trim();if(!hasSrc)return "";
+  const lab=what==="qcm"?(n?"✨ Ajouter des QCM depuis le cours":"✨ Créer les QCM depuis le cours"):(n?"✨ Ajouter des flashcards depuis le cours":"✨ Créer les flashcards depuis le cours");
+  return aiOK()?`<div class="row" style="margin-bottom:12px"><button class="btn ${n?"ghost":""} small" data-act="genmore" data-w="${what}">${lab}</button>${n?"":`<span class="help">Basé uniquement sur ton cours.</span>`}</div>`:""}
+function tabCards(d){return genBar(d,"cards")+tabCards0(d)}
+function tabQcm(d){return genBar(d,"qcm")+tabQcm0(d)}
+function tabCards0(d){
   const s=S.session;
   if(s&&s.type==="cards"&&s.deckId===d.id){
     if(s.i>=s.queue.length){
@@ -1085,7 +1092,7 @@ function tabCards(d){
 }
 function reportLink(d,kind,txt){const m=`Bonjour, je signale une erreur dans MédiJ.\nMatière : ${d.matiere||""}\nChapitre : ${d.name||""}\n${kind} : ${String(txt||"").slice(0,300)}\nL'erreur : `;
   return `<a class="btn ghost small" style="align-self:center;text-decoration:none" href="mailto:mouignimariame0@gmail.com?subject=${encodeURIComponent("Erreur signalée – "+(d.name||"MédiJ"))}&body=${encodeURIComponent(m)}">⚠️ Signaler une erreur</a>`}
-function tabQcm(d){
+function tabQcm0(d){
   const s=S.session;
   if(s&&s.type==="qcm"&&s.deckId===d.id){
     if(s.i>=s.order.length){
@@ -1540,50 +1547,73 @@ function jobLog(m){if(!X.job)return;X.job.lines.push(m);jobRender()}
 function jobRender(){const o=$("#overlay");const j=X.job;if(!j){o.innerHTML="";return}
   o.innerHTML=`<div class="sheet"><div class="box"><div class="label">MédiJ travaille</div><h3>${esc(j.title)}</h3><div class="stack" style="gap:4px;max-height:40vh;overflow:auto">${j.lines.map(l=>`<div class="help">${esc(l)}</div>`).join("")}</div>${j.done?`<button class="btn" data-act="jobclose">Fermer</button>`:`<div class="row"><span class="spin" aria-hidden="true"></span><span class="help">Cela peut prendre quelques minutes pour un long cours.</span></div><button class="btn ghost" data-act="jobstop">Arrêter</button>`}</div></div>`}
 function chunksOf(text,max){const out=[];let cur="";for(const l of text.split("\n")){if(cur.length+l.length>max&&cur){out.push(cur);cur=""}cur+=l+"\n"}if(cur.trim())out.push(cur);return out}
+/* niveau de l'étudiant pour les consignes de l'IA */
+function niveauTxt(){let f="",p="";try{f=localStorage.getItem("medij-filiere")||"";p=curPer()}catch(e){}return "cours de "+(f||"médecine")+(p?" ("+p+")":"")}
+/* flashcards à partir d'un texte de cours, partie par partie ; une partie qui échoue est redécoupée puis ignorée */
+async function genCardsFrom(base,text,signal,log){
+  let parts=chunksOf(text,12000),cards=[],plan=[],fails=0;const n=parts.length;
+  for(let i=0;i<parts.length;i++){const part=parts[i];if(n>1)log(`… flashcards, partie ${i+1}/${n}`);
+    try{const o=await askJSON(`${base}\nÀ partir de cette ${n>1?`PARTIE ${i+1}/${n} du `:""}COURS, produis un objet JSON {"plan":[...],"cards":[...]} :\n- "plan" : TOUS les titres et sous-titres présents dans ce texte, recopiés exactement, dans l'ordre.\n- "cards" : des flashcards couvrant TOUTES les connaissances évaluables, dans l'ordre du cours. Une seule information précise par carte ; question courte et sans ambiguïté ; réponse complète mais concise (listes complètes quand le cours donne une liste). Chaque carte : {"q":"…","a":"…","s":"titre de la section"}. ${COURSE_RULE}\nRéponds uniquement avec le JSON.\n\nCOURS :\n<<<\n${part}\n>>>`,{signal});
+      const L=Array.isArray(o)?o:o?.cards;if(Array.isArray(o?.plan))plan.push(...o.plan.map(String));if(Array.isArray(L))cards.push(...L.filter(c=>c&&c.q&&c.a))}
+    catch(e){if(e?.code==="cancelled")throw e;fails++;log("⚠ Partie "+(i+1)+" : "+aiErr(e)+" (je continue)")}}
+  return {cards,plan,fails}}
+async function genQcmFrom(base,text,signal,nb=[10,20]){
+  const qs=await askJSON(`${base}\nÀ partir du COURS, écris entre ${nb[0]} et ${nb[1]} QCM d'examen (style examen de faculté) couvrant les notions les plus évaluables. Chaque QCM : 5 propositions (A à E), de 1 à 5 justes. Les propositions fausses doivent être fausses d'après le cours (pas de piège ambigu). "expl" = correction détaillée : pour chaque proposition, la lettre, Vrai/Faux et la justification tirée du cours. ${COURSE_RULE}\nFormat : tableau JSON [{"q":"…","options":["…","…","…","…","…"],"correct":[0,2],"expl":"A. Vrai : … B. Faux : …"}]. Réponds uniquement avec le JSON.\n\nCOURS :\n<<<\n${text.slice(0,40000)}\n>>>`,{signal});
+  const L=Array.isArray(qs)?qs:(qs?.qcm||qs?.questions||Object.values(qs||{}).find(Array.isArray)||[]);
+  return L.filter(q=>q&&q.q&&Array.isArray(q.options)&&q.options.length>=2&&Array.isArray(q.correct)&&q.correct.length).map(q=>({id:uid(),q:String(q.q),options:q.options.map(String).slice(0,8),correct:q.correct.map(Number).filter(n=>n>=0&&n<q.options.length),expl:String(q.expl||""),gen:true})).filter(q=>q.correct.length)}
+function addCards(live,cards){const seen=new Set((live.cards||[]).map(c=>normLine(c.q)));let n=0;
+  for(const c of cards){const k=normLine(c.q);if(seen.has(k))continue;seen.add(k);(live.cards??=[]).push({id:uid(),q:String(c.q),a:String(c.a),src:c.s?String(c.s):"",box:0,due:null,gen:true});n++}return n}
+function addQcm(live,qcm){const seen=new Set((live.qcm||[]).map(q=>normLine(q.q)));let n=0;
+  for(const q of qcm){const k=normLine(q.q);if(seen.has(k))continue;seen.add(k);(live.qcm??=[]).push(q);n++}return n}
 async function genChapter(d,text,figs){
-  const job=jobShow("Fiche, flashcards et QCM · "+d.name);const signal=job.ctl.signal;
+  const job=jobShow("Fiche, flashcards et QCM · "+d.name);const signal=job.ctl.signal;const res=[];
   try{
     let figTxt="";
+    if(figs.length&&!ASSETS){jobLog("ℹ️ Les schémas choisis ne peuvent pas être enregistrés ici : la fiche est créée sans eux.");figs=[]}
     if(figs.length){
-      if(!ASSETS)throw {message:"L'ajout de schémas demande les droits d'édition du site."};
       jobLog(`Enregistrement de ${figs.length} schéma(s) original(aux)…`);
       for(const g of figs){if(!g.url){const r=await ASSETS.upload(g.blob,{type:g.blob.type||"image/jpeg"});g.url=r.url||("/_blob/"+r.id);g.id=r.id}}
       figTxt=`\n5. Schémas originaux disponibles. Insère CHACUN sur sa propre ligne, à l'endroit du plan où il apparaît dans le cours, avec la syntaxe {{N|légende courte}} (N = numéro de page/diapo), puis une ligne « > » qui explique en une phrase ce qu'il montre, uniquement d'après le cours : ${figs.map(g=>g.unit+" "+g.n).join(", ")}.`;
     }
-    const base=`Chapitre « ${d.name} »${d.matiere?" ("+d.matiere+")":""}, cours de L3 de médecine.`;
-    jobLog("Rédaction de la fiche synthétique (plan exact du cours)…");
+    const base=`Chapitre « ${d.name} »${d.matiere?" ("+d.matiere+")":""}, ${niveauTxt()}.`;
+    const live0=getDeck(d.id);if(!live0)throw {message:"Chapitre introuvable"};
+    // 0. le cours source est enregistré tout de suite : rien n'est perdu si l'IA échoue ensuite
+    const prevSrc=S.src.get(live0.id)||{};
+    const srcBody={...prevSrc,text:prevSrc.text&&!prevSrc.text.includes(text.slice(0,200))?prevSrc.text+"\n\n"+text:text,file:prevSrc.file||(X.imp?.files||[]).map(f=>f.name).join(", "),origin:"importé dans le site",updatedAt:today(),figs:figs.map(g=>({p:g.n,t:""})),unit:figs[0]?.unit||"Diapo"};
+    S.src.set(live0.id,srcBody);S.idx=null;if(db){try{await db.doc("sources/"+live0.id).set(srcBody)}catch(e){jobLog("⚠ Cours source non enregistré")}}else saveSource(live0.id,srcBody.text);
+    // 1. fiche
+    jobLog("1/3 · Rédaction de la fiche (plan exact du cours)…");
+    try{
     const fp=`${base}\nRédige la FICHE SYNTHÉTIQUE de ce cours.\nRègles absolues :\n1. Respecte exactement le plan du cours : mêmes titres, sous-titres, parties et sous-parties, dans le même ordre, avec leur numérotation d'origine (même si elle est incohérente). Ne fusionne, ne déplace et ne supprime aucune rubrique, y compris Objectifs et Plan.\n2. Chaque connaissance évaluable doit apparaître (définitions, chiffres, valeurs normales, classifications, signes, mécanismes, causes, examens, traitements, listes complètes). Tu peux raccourcir les phrases, jamais supprimer une connaissance.\n3. ${COURSE_RULE} Si le cours contient une incohérence ou une coquille, garde-la et signale-la sur une ligne « > ⚠ À vérifier : … ».\n4. Format : « # » titre du chapitre, « ## » parties, « ### » et « #### » sous-parties ; « - » listes ; **gras** pour les mots-clés ; ==surligné== pour l'indispensable ; tableaux « | a | b | » quand le cours compare ; « > » pour les encadrés. Aucune autre syntaxe, pas de HTML.${figTxt}\nRéponds uniquement avec la fiche.\n\nCOURS :\n<<<\n${text}\n>>>`;
-    let fiche="",r=await ask(fp,{modelTier:"complex",signal});fiche=r.text;let k=0;
-    while(r.truncated&&k<3){k++;jobLog("La fiche est longue : suite de la rédaction…");
-      r=await ask(fp+`\n\nTu as déjà rédigé le début de la fiche. Voici ses dernières lignes :\n<<<\n${fiche.slice(-3000)}\n>>>\nContinue EXACTEMENT là où elle s'arrête, sans rien répéter.`,{modelTier:"complex",signal});fiche+="\n"+r.text}
-    for(const g of figs)fiche=fiche.replace(new RegExp(`\\{\\{${g.n}\\|([^}]*)\\}\\}`,"g"),(m,t)=>`![${g.unit} ${g.n} · ${t.trim()}](${g.url})`);
-    fiche=fiche.replace(/\{\{\d+\|[^}]*\}\}/g,"");
-    jobLog("Flashcards (une information par carte)…");
-    const parts=chunksOf(text,26000);let cards=[],plan=[];
-    for(let i=0;i<parts.length;i++){if(parts.length>1)jobLog(`… partie ${i+1}/${parts.length}`);
-      const o=await askJSON(`${base}\nÀ partir de cette ${parts.length>1?`PARTIE ${i+1}/${parts.length} du `:""}COURS, produis un objet JSON {"plan":[...],"cards":[...]} :\n- "plan" : TOUS les titres et sous-titres présents dans ce texte, recopiés exactement, dans l'ordre.\n- "cards" : des flashcards couvrant TOUTES les connaissances évaluables, dans l'ordre du cours. Une seule information précise par carte ; question courte et sans ambiguïté ; réponse complète mais concise (listes complètes quand le cours donne une liste). Chaque carte : {"q":"…","a":"…","s":"titre de la section"}. ${COURSE_RULE}\nRéponds uniquement avec le JSON.\n\nCOURS :\n<<<\n${parts[i]}\n>>>`,{signal});
-      if(Array.isArray(o?.plan))plan.push(...o.plan.map(String));if(Array.isArray(o?.cards))cards.push(...o.cards.filter(c=>c&&c.q&&c.a))}
-    jobLog(`${cards.length} flashcards. QCM corrigés…`);
-    const qs=await askJSON(`${base}\nÀ partir du COURS, écris entre 10 et 20 QCM d'examen (style faculté de médecine) couvrant les notions les plus évaluables. Chaque QCM : 5 propositions (A à E), de 1 à 5 justes. Les propositions fausses doivent être fausses d'après le cours (pas de piège ambigu). "expl" = correction détaillée : pour chaque proposition, la lettre, Vrai/Faux et la justification tirée du cours. ${COURSE_RULE}\nFormat : tableau JSON [{"q":"…","options":["…","…","…","…","…"],"correct":[0,2],"expl":"A. Vrai : … B. Faux : …"}]. Réponds uniquement avec le JSON.\n\nCOURS :\n<<<\n${text.slice(0,90000)}\n>>>`,{signal});
-    const qcm=(Array.isArray(qs)?qs:[]).filter(q=>q&&q.q&&Array.isArray(q.options)&&q.options.length>=2&&Array.isArray(q.correct)&&q.correct.length).map(q=>({id:uid(),q:String(q.q),options:q.options.map(String).slice(0,8),correct:q.correct.map(Number).filter(n=>n>=0&&n<q.options.length),expl:String(q.expl||""),gen:true}));
-    // fusion sans doublon et sans perte de progression
-    const live=getDeck(d.id);if(!live)throw {message:"Chapitre introuvable"};
-    const hadFiche=!!(live.fiche||"").trim();
-    if(hadFiche&&normLine(live.fiche)!==normLine(fiche)){live.ficheAvant=live.fiche}
-    live.fiche=fiche.trim();
-    const seenQ=new Set((live.cards||[]).map(c=>normLine(c.q)));let addC=0;
-    for(const c of cards){const k2=normLine(c.q);if(seenQ.has(k2))continue;seenQ.add(k2);(live.cards??=[]).push({id:uid(),q:String(c.q),a:String(c.a),src:c.s?String(c.s):"",box:0,due:null,gen:true});addC++}
-    const seenM=new Set((live.qcm||[]).map(q=>normLine(q.q)));let addQ=0;
-    for(const q of qcm){const k2=normLine(q.q);if(seenM.has(k2))continue;seenM.add(k2);(live.qcm??=[]).push(q);addQ++}
-    markDirty(live.id);
-    const prevSrc=S.src.get(live.id)||{};
-    const srcBody={...prevSrc,text:prevSrc.text&&!prevSrc.text.includes(text.slice(0,200))?prevSrc.text+"\n\n"+text:text,file:prevSrc.file||(X.imp?.files||[]).map(f=>f.name).join(", "),origin:"importé dans le site",updatedAt:today(),plan:[...new Set(plan.map(s=>s.trim()).filter(Boolean))],figs:figs.map(g=>({p:g.n,t:""})),unit:figs[0]?.unit||"Diapo"};
-    S.src.set(live.id,srcBody);S.idx=null;if(db){try{await db.doc("sources/"+live.id).set(srcBody)}catch(e){jobLog("⚠ Cours source non enregistré")}}else saveSource(live.id,srcBody.text);
-    jobLog(`✓ Fiche ${hadFiche?"mise à jour (l'ancienne est gardée dans « ficheAvant »)":"créée"} · ${addC} flashcards ajoutées · ${addQ} QCM ajoutés${cards.length-addC?` · ${cards.length-addC} doublons ignorés`:""}.`);
-    jobLog("Vérifie l'onglet Couverture pour contrôler que rien ne manque.");
+      let fiche="",r=await ask(fp,{modelTier:"complex",signal});fiche=r.text;let k=0;
+      while(r.truncated&&k<3){k++;jobLog("La fiche est longue : suite de la rédaction…");
+        r=await ask(fp+`\n\nTu as déjà rédigé le début de la fiche. Voici ses dernières lignes :\n<<<\n${fiche.slice(-3000)}\n>>>\nContinue EXACTEMENT là où elle s'arrête, sans rien répéter.`,{modelTier:"complex",signal});fiche+="\n"+r.text}
+      for(const g of figs)fiche=fiche.replace(new RegExp(`\\{\\{${g.n}\\|([^}]*)\\}\\}`,"g"),(m,t)=>`![${g.unit} ${g.n} · ${t.trim()}](${g.url})`);
+      fiche=fiche.replace(/\{\{\d+\|[^}]*\}\}/g,"").trim();
+      const live=getDeck(d.id);if(fiche){if((live.fiche||"").trim()&&normLine(live.fiche)!==normLine(fiche))live.ficheAvant=live.fiche;live.fiche=fiche;markDirty(live.id);res.push("fiche créée");jobLog("✓ Fiche enregistrée")}
+    }catch(e){if(e?.code==="cancelled")throw e;jobLog("⚠ Fiche : "+aiErr(e)+" — je passe aux flashcards.")}
+    // 2. flashcards
+    jobLog("2/3 · Flashcards (une information par carte)…");
+    const C=await genCardsFrom(base,text,signal,jobLog);
+    {const live=getDeck(d.id);const n=addCards(live,C.cards);if(C.plan.length){srcBody.plan=[...new Set(C.plan.map(s=>s.trim()).filter(Boolean))];if(db){try{await db.doc("sources/"+live.id).set(srcBody)}catch(e){}}}
+      markDirty(live.id);res.push(n+" flashcards");jobLog(`✓ ${n} flashcards ajoutées`)}
+    // 3. QCM
+    jobLog("3/3 · QCM corrigés…");
+    try{const Q=await genQcmFrom(base,text,signal);const live=getDeck(d.id);const n=addQcm(live,Q);markDirty(live.id);res.push(n+" QCM");jobLog(`✓ ${n} QCM ajoutés`)}
+    catch(e){if(e?.code==="cancelled")throw e;jobLog("⚠ QCM : "+aiErr(e)+" Tu pourras les créer plus tard dans l'onglet QCM.")}
+    jobLog(res.length?"Terminé : "+res.join(" · ")+".":"Rien n'a pu être créé pour le moment : l'IA est très demandée, réessaie dans quelques minutes. Ton cours est bien enregistré.");
   }catch(e){jobLog("✗ "+aiErr(e))}
   job.done=true;jobRender();render();
 }
+/* créer flashcards ou QCM plus tard, depuis un cours déjà enregistré */
+async function genMore(d,what){
+  const text=(S.src.get(d.id)?.text||"").trim()||String(d.fiche||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"");
+  if(words(text)<30){toast("Il faut d'abord un cours importé ou une fiche.");return}
+  const job=jobShow((what==="qcm"?"QCM":"Flashcards")+" · "+d.name);const signal=job.ctl.signal;const base=`Chapitre « ${d.name} »${d.matiere?" ("+d.matiere+")":""}, ${niveauTxt()}.`;
+  try{if(what==="qcm"){const Q=await genQcmFrom(base,text,signal);const n=addQcm(getDeck(d.id),Q);markDirty(d.id);jobLog(`✓ ${n} QCM ajoutés`)}
+    else{const C=await genCardsFrom(base,text,signal,jobLog);const n=addCards(getDeck(d.id),C.cards);markDirty(d.id);jobLog(`✓ ${n} flashcards ajoutées`)}}
+  catch(e){jobLog("✗ "+aiErr(e))}
+  job.done=true;jobRender();render()}
 
 /* ---------- Page « En classe » : cours réellement suivis ---------- */
 function viewClasse(){
@@ -1646,7 +1676,7 @@ function readClasseForm(){
 }
 function ensureDeck(f){
   let d=getDeck(f.deckId);if(d)return d;
-  const name=(f.newName||"").trim();if(!name)return null;
+  let name=(f.newName||"").trim();if(!name){const fn=(X.imp?.files||[]).find(x=>x.name)?.name||"";name=fn.replace(/\.[a-z0-9]+$/i,"").replace(/[_-]+/g," ").trim()}if(!name)return null;
   d={id:uid(),periode:curPer(),name,matiere:f.matiere||"Sans matière",learnedOn:null,jDone:[],fiche:"",cards:[],qcm:[],lastScore:null,createdAt:today()};
   S.decks.push(d);sortDecks();markDirty(d.id);f.deckId=d.id;return d;
 }
@@ -3551,6 +3581,7 @@ document.addEventListener("click",async e=>{
     case "objmode":X.objHide=b.dataset.m==="test";X.objShow={};render();break;
     case "objshow":X.objShow={...(X.objShow||{}),[b.dataset.i]:true};render();break;
     case "objgen":if(d)doObjectifs(d);break;
+    case "genmore":if(d)genMore(d,b.dataset.w);break;
     case "impgen":if(d)doImportants(d);break;
     case "methgen":methGen(b.dataset.m);break;
     case "memomode":X.memoHide=b.dataset.m==="test";X.memoShow={};render();break;
