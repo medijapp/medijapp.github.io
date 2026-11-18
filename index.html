@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261118194000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118195000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,7 +49,7 @@
 *{box-sizing:border-box}
 html,body{min-height:100%}
 body{background-color:var(--bg);background-image:var(--grad);background-attachment:fixed;min-height:100vh;color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
-.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 110px}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 170px}
 h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
 h1{font-size:1.9rem;font-weight:800;letter-spacing:-.01em}
 h2{font-size:1.25rem;font-weight:800}
@@ -930,15 +930,14 @@ function viewMatieres(){
   <p class="help" style="margin-top:-6px">Crée tes matières, puis importe chaque chapitre dedans. Tu peux changer un chapitre de matière à tout moment.</p>
   <div class="chips" style="margin-bottom:14px">${allPers().map(p=>`<button class="chip" data-act="perset" data-p="${esc(p)}" aria-pressed="${p===curPer()}">${esc(p)} <span style="opacity:.7">· ${S.decks.filter(d=>perOf(d)===p).length}</span></button>`).join("")}<button class="chip" data-act="peradd">+ Semestre</button></div>
   ${searchBox("hq","","Chercher dans toutes les matières…")}
-  ${filCas()?`<button class="mini" data-act="casview" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· tous les cours vus</span></span><span class="pill">→</span></button>`:""}
-  ${filMed()?`<button class="mini" data-act="synopen" data-m="" style="margin-bottom:14px"><span><strong>Syndromes et triades</strong> <span class="muted">· toutes les matières</span></span><span class="pill">→</span></button>`:""}
   ${keys.length?`<div class="mgrid pins">${keys.map(k=>{const list=groups[k],done=list.filter(d=>d.learnedOn).length,due=list.reduce((n,d)=>n+dueCards(d).length,0),src=list.filter(d=>S.src.has(d.id)).length;
     const im=list.map(pinImg).find(Boolean),hh=pinHash(k);
     return `<button class="mtile pin" data-act="mat" data-m="${esc(k)}">${im&&hh%2?`<div class="cover img" style="aspect-ratio:${["4/5","1/1","3/4"][hh%3]}"><img src="${esc(im)}" alt="" loading="lazy"></div>`:`<div class="cover c${hh%6}" style="height:${[90,120,150][hh%3]}px"><span class="ini">${esc(k.charAt(0).toUpperCase())}</span></div>`}<div class="body"><h3>${esc(k)}</h3>
       <div class="help">${list.length} chapitre${list.length>1?"s":""}${due?` · <strong>${due} cartes à revoir</strong>`:""}</div>
       <div class="progress" aria-label="${done} sur ${list.length} révisés"><i style="width:${Math.round(done/Math.max(1,list.length)*100)}%"></i></div>
       <div class="help">${list.length?"":"vide · touche pour importer · "}${done}/${list.length} révisés${S.srcLoaded?` · cours source ${src}/${list.length}`:""}</div></div></button>`}).join("")}</div>`
-  :`<div class="empty"><h3>Commence par tes matières</h3><p>1. Touche <strong>＋ Matière</strong> (ex. Sémiologie digestive).<br>2. Ouvre-la et touche <strong>📥 Importer un chapitre</strong>.</p><button class="btn" data-act="matadd">＋ Créer ma première matière</button></div>`}`;
+  :`<div class="empty"><h3>Commence par tes matières</h3><p>1. Touche <strong>＋ Matière</strong> (ex. Sémiologie digestive).<br>2. Ouvre-la et touche <strong>📥 Importer un chapitre</strong>.</p><button class="btn" data-act="matadd">＋ Créer ma première matière</button></div>`}
+  ${keys.length?`<div class="section" style="margin-top:18px"><h2>Pour aller plus loin</h2>${filCas()?`<button class="mini" data-act="casview" style="margin-bottom:8px"><span><strong>🧑‍⚕️ Cas cliniques</strong> <span class="muted">· tous les cours vus</span></span><span class="pill">→</span></button>`:""}${filMed()?`<button class="mini" data-act="synopen" data-m="" style="margin-bottom:14px"><span><strong>Syndromes et triades</strong> <span class="muted">· toutes les matières</span></span><span class="pill">→</span></button>`:""}</div>`:""}`;
 }
 function viewMatiere(){
   const all=groupsByMat()[S.mat]||[];
@@ -1074,8 +1073,9 @@ function genBar(d,what){const sess=S.session&&S.session.deckId===d.id&&S.session
   const lab=what==="qcm"?(n?"✨ Ajouter des QCM depuis le cours":"✨ Créer les QCM depuis le cours"):(n?"✨ Ajouter des flashcards depuis le cours":"✨ Créer les flashcards depuis le cours");
   const loc=`<button class="btn ghost small" data-act="genlocal2" data-w="${what}">⚡ ${what==="qcm"?"QCM":"Flashcards"} sans IA (illimité)</button>`;
   return `<div class="row" style="margin-bottom:12px">${aiOK()?`<button class="btn ${n?"ghost":""} small" data-act="genmore" data-w="${what}">${lab}</button>`:""}${loc}${!n&&aiOK()?`<span class="help">Basé uniquement sur ton cours.</span>`:""}</div>`}
-function tabCards(d){return genBar(d,"cards")+tabCards0(d)}
-function tabQcm(d){return genBar(d,"qcm")+tabQcm0(d)}
+const noCourse=d=>!d.example&&S.srcLoaded&&!(S.src.get(d.id)?.text||"").trim()&&!(d.fiche||"").trim();
+function tabCards(d){return genBar(d,"cards")+(noCourse(d)&&!(d.cards||[]).length?"":tabCards0(d))}
+function tabQcm(d){return genBar(d,"qcm")+(noCourse(d)&&!(d.qcm||[]).length?"":tabQcm0(d))}
 function tabCards0(d){
   const s=S.session;
   if(s&&s.type==="cards"&&s.deckId===d.id){
@@ -3051,6 +3051,7 @@ function tuBar(d){const N=tuNotions(d),c=tuCounts(d),t=N.length||1;
   <div class="help" style="margin:4px 0 0">${TU_IC[2]} ${c[2]} maîtrisée${c[2]>1?"s":""} · ${TU_IC[1]} ${c[1]} comprise${c[1]>1?"s":""} · ${TU_IC[0]} ${c[0]} pas encore</div>`}
 /* vue principale de l'onglet Cours expliqué */
 function tabLessonTop(d){
+  if(noCourse(d))return genBar(d,"fiche");
   const N=tuNotions(d),mode=(X.tuMode??={})[d.id]||(N.length?"tu":"read");
   const sw=`<div class="seg tu-seg" style="margin-bottom:12px"><button aria-selected="${mode==="tu"}" data-act="tumode" data-v="tu">🧠 Comprendre pas à pas</button><button aria-selected="${mode==="read"}" data-act="tumode" data-v="read">📖 Lire le cours expliqué</button></div>`;
   if(mode!=="tu")return sw+tabLesson(d);
@@ -3169,6 +3170,19 @@ function tuSafeSvg(x){x=String(x||"");if(x[0]==="@")x=(typeof TU_SVG!=="undefine
 
 /* ---------- Cas cliniques : tous les cas des cours vus, réunis au même endroit (d.cas) ---------- */
 function casDecks(){return S.decks.filter(d=>(d.cas||[]).length)}
+async function casGen(d){const k="cas-"+d.id;if(X.ai[k])return;X.ai[k]=true;render();
+  try{const o=await askJSON(`Tu es professeur. À partir UNIQUEMENT de la fiche du cours « ${d.name} » (${d.matiere||""}, ${niveauTxt()}), écris 2 cas cliniques d'entraînement type examen.
+Chaque cas : "titre" court ; "histoire" = présentation du patient (âge, sexe, motif, histoire de la maladie, examen) en 4 à 8 lignes, sans donner le diagnostic ; "etapes" = 3 à 5 questions à choix unique qui avancent dans la démarche (signes, diagnostic, mécanisme, examens, conduite à tenir), chacune avec 4 propositions, "correct" = index (0 à 3) de la bonne réponse, "expl" = explication courte tirée de la fiche.
+N'utilise que des informations présentes dans la fiche ; n'invente ni chiffre ni traitement absent. Adapte à la filière (pour une filière non médicale, une situation de terrain ou de laboratoire).
+Réponds en JSON : {"cas":[{"titre":"…","histoire":"…","etapes":[{"q":"…","options":["…","…","…","…"],"correct":0,"expl":"…"}]}]}
+
+FICHE :
+${String(d.fiche||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").slice(0,40000)}`,{modelTier:"default"});
+    const L=(Array.isArray(o)?o:o?.cas||[]).filter(c=>c&&c.titre&&c.histoire&&Array.isArray(c.etapes)).map(c=>({id:uid(),titre:String(c.titre),histoire:String(c.histoire),
+      etapes:c.etapes.filter(e=>e&&e.q&&Array.isArray(e.options)&&e.options.length>=2&&+e.correct>=0&&+e.correct<e.options.length).map(e=>({q:String(e.q),options:e.options.map(String),correct:+e.correct,expl:String(e.expl||"")}))})).filter(c=>c.etapes.length);
+    if(!L.length)throw {code:"invalid_json"};const live=getDeck(d.id);(live.cas??=[]).push(...L);markDirty(live.id);toast(`${L.length} cas cliniques créés`)}
+  catch(e){toast(aiErr(e))}
+  X.ai[k]=false;render()}
 function viewCas(){ if(!isPro())return proWall("Cas cliniques");
   const D=casDecks(),mats=[...new Set(D.map(d=>d.matiere||"Autre"))],m=X.casMat||"";
   const open=X.casOpen;if(open){const d=getDeck(open.d);const c=d&&(d.cas||[]).find(x=>x.id===open.c);if(c)return casPlay(d,c)}
@@ -3176,8 +3190,11 @@ function viewCas(){ if(!isPro())return proWall("Cas cliniques");
   const tot=D.reduce((n,d)=>n+d.cas.length,0),ok=D.reduce((n,d)=>n+Object.keys(done(d)).length,0);
   return topbar("Cas cliniques",true)+`<div class="hero"><div class="label">${ok}/${tot} cas faits</div><h1>Cas cliniques</h1></div>
   <div class="chips" style="margin-bottom:12px"><button class="chip" data-act="casmat" data-m="" aria-pressed="${!m}">Tous</button>${mats.map(x=>`<button class="chip" data-act="casmat" data-m="${esc(x)}" aria-pressed="${m===x}">${esc(x)}</button>`).join("")}</div>
+  ${(()=>{const T=S.decks.filter(d=>!d.example&&(d.fiche||"").trim()&&!(d.cas||[]).length&&(!m||(d.matiere||"Autre")===m)&&perOf(d)===curPer());if(!T.length)return "";
+    return `<div class="panel stack" style="margin-bottom:12px"><div class="label">Créer des cas à partir de tes cours</div><p class="help" style="margin:0">Chaque chapitre qui a une fiche peut donner 2 cas cliniques, construits uniquement avec ton cours.</p>
+    ${T.slice(0,15).map(d=>`<div class="mini"><span><strong>${esc(d.name)}</strong> <span class="muted">· ${esc(d.matiere||"")}</span></span>${aiOK()?`<button class="btn small soft" data-act="casgen" data-d="${d.id}" ${X.ai["cas-"+d.id]?"disabled":""}>${X.ai["cas-"+d.id]?"Création…":"Créer 2 cas"}</button>`:""}</div>`).join("")}${aiOK()?"":noAI}</div>`})()}
   ${list.map(d=>`<div class="panel stack" style="margin-bottom:10px"><div class="label">${esc(d.matiere||"")}</div><h3 style="margin:0">${esc(d.name)}</h3>
-    ${d.cas.map(c=>{const r=done(d)[c.id];return `<button class="mini" data-act="casopen" data-d="${d.id}" data-c="${c.id}"><span><strong>${esc(c.titre)}</strong> <span class="muted">· ${c.etapes.length} questions</span></span><span class="pill">${r?`${r.s}/${c.etapes.length} ✓`:"→"}</span></button>`}).join("")}</div>`).join("")||`<div class="panel"><p class="help" style="margin:0">Pas encore de cas.</p></div>`}`}
+    ${d.cas.map(c=>{const r=done(d)[c.id];return `<button class="mini" data-act="casopen" data-d="${d.id}" data-c="${c.id}"><span><strong>${esc(c.titre)}</strong> <span class="muted">· ${c.etapes.length} questions</span></span><span class="pill">${r?`${r.s}/${c.etapes.length} ✓`:"→"}</span></button>`}).join("")}</div>`).join("")||`<div class="panel"><p class="help" style="margin:0">Pas encore de cas. Importe un chapitre et crée sa fiche : tu pourras ensuite créer ses cas cliniques ici.</p></div>`}`}
 function casPlay(d,c){const k=d.id+"|"+c.id,A=(X.casAns??={})[k]||[],i=A.length,E=c.etapes;
   const shown=E.slice(0,Math.min(i+1,E.length)).map((e,j)=>{const r=A[j];
     const opts=e.options.map((o,oi)=>{let cls="";if(r!=null){if(oi===e.correct)cls="ok";else if(oi===r)cls="ko"}return `<button class="tu-opt ${cls}" data-act="casans" data-k="${esc(k)}" data-j="${j}" data-v="${oi}" ${r!=null?"disabled":""}>${esc(o)}</button>`}).join("");
@@ -3679,6 +3696,7 @@ document.addEventListener("click",async e=>{
     case "objgen":if(d)doObjectifs(d);break;
     case "genmore":if(d){if(b.dataset.w==="fiche")genChapter(d,(S.src.get(d.id)?.text||"").trim(),[]);else genMore(d,b.dataset.w)}break;
     case "genlocal":if(d)genLocal(d);break;
+    case "casgen":{const dd=getDeck(b.dataset.d);if(dd)casGen(dd);break}
     case "matadd":matSheet("Nouvelle matière","",async m=>{await addMat(m);S.mat=m;S.mf="all";S.view="matiere";render();toast("Matière « "+m+" » créée")});break;
     case "chmat":if(d)matSheet("Ranger « "+d.name+" » dans…",d.matiere,async m=>{d.matiere=m;markDirty(d.id);await addMat(m);sortDecks();S.mat=m;toast("Rangé dans « "+m+" »");render()});break;
     case "matren":{const old=S.mat;matSheet("Renommer « "+old+" » en…","",async m=>{if(m===old)return;S.decks.filter(x=>x.matiere===old).forEach(x=>{x.matiere=m;markDirty(x.id)});if(X.planning?.matieres)X.planning.matieres=X.planning.matieres.filter(x=>!(x.per===curPer()&&x.n===old));await addMat(m);sortDecks();S.mat=m;render();toast("Matière renommée")});break}
