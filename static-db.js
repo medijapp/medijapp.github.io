@@ -81,7 +81,7 @@
     const body={contents,generationConfig:{maxOutputTokens:32768,temperature:.4,...(json?{responseMimeType:"application/json"}:{})}};
     let tries=0;const sleep=ms=>new Promise(ok=>setTimeout(ok,ms));
     for(;;){
-      let r;try{if(PROV==="central"){const ss=(await CLOUD.sb.auth.getSession()).data.session;if(!ss)throw err("not_granted","Connecte-toi à ton compte MédiJ pour utiliser l'IA.");
+      let r,t0=Date.now();try{if(PROV==="central"){const ss=(await CLOUD.sb.auth.getSession()).data.session;if(!ss)throw err("not_granted","Connecte-toi à ton compte MédiJ pour utiliser l'IA.");
           const tc=new AbortController(),tm=setTimeout(()=>tc.abort(),150000),fw=()=>tc.abort();opts.signal?.addEventListener?.("abort",fw);
           try{r=await fetch(CLOUD.url+"/functions/v1/medij-ia",{method:"POST",headers:{"Content-Type":"application/json",apikey:CLOUD.key,Authorization:"Bearer "+ss.access_token},body:JSON.stringify({model:MODELS[MI],body}),signal:tc.signal})}
           catch(e2){if(!opts.signal?.aborted&&tc.signal.aborted)throw err("upstream_error","L'IA met trop de temps à répondre. Réessaie dans un instant, ou envoie une photo plus nette / moins de pages à la fois.");throw e2}
@@ -91,6 +91,7 @@
       if(r.status===404&&MI<MODELS.length-1){MI++;continue}
       const j=await r.json().catch(()=>({}));
       if(!r.ok){const m=j?.error?.message||("Erreur "+r.status);
+        if(PROV==="central"&&j?.error?.medij&&r.status===503&&tries<2&&Date.now()-t0<40000){tries++;await sleep(4000*tries);if(opts.signal?.aborted)throw err("cancelled","stop");continue}
         if(PROV==="central"&&j?.error?.medij)throw err(r.status===429?"rate_limited":r.status>=500?"upstream_error":"not_granted",m);
         if([429,500,502,503,504].includes(r.status)&&tries<MODELS.length*2-1){tries++;MI=(MI+1)%MODELS.length;await sleep(Math.min(6000,1200*tries));if(opts.signal?.aborted)throw err("cancelled","stop");continue}
         if(r.status===429)throw err("rate_limited","Limite gratuite de l'IA atteinte pour le moment. Réessaie dans quelques minutes (ou demain si la limite du jour est atteinte).");

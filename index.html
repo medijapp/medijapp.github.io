@@ -19,7 +19,7 @@
 <script src="static-db.js"></script>
 <script src="medij-defi.js" defer></script>
 <script src="medij-tuto.js" defer></script>
-<script>window.__BUILD="20261117232000";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
+<script>window.__BUILD="20261118175500";(function(){var busy=false;function chk(){if(busy||!navigator.onLine)return;busy=true;fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.v&&j.v!==window.__BUILD){var k="rev-upd-"+j.v;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1")}catch(e){}var p=[];if(window.caches)p.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x)}))}));if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.update()}))}));Promise.all(p).catch(function(){}).then(function(){location.reload()})}}).catch(function(){}).then(function(){busy=false})}addEventListener("load",chk);document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()})})();</script>
 <title>MédiJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1251,7 +1251,7 @@ const DEF_PLAN=()=>({edt:[],habits:[],obligations:[],exams:[],calendar:[],priori
 
 /* ---------- utilitaires ---------- */
 const wdOf=s=>{const [y,m,d]=s.split("-").map(Number);return ((new Date(y,m-1,d).getDay()+6)%7)+1};
-const toMin=t=>{const m=String(t||"").match(/^(\d{1,2})[:hH](\d{2})?$/);return m?(+m[1])*60+(+(m[2]||0)):null};
+const toMin=t=>{const m=String(t||"").trim().replace(/\s+/g,"").match(/^(\d{1,2})(?:[:hH.](\d{2})?(?::\d{2})?)?$/);if(!m||!/[:hH.]/.test(String(t))&&String(t).trim().length>2)return null;const h=+m[1],mi=+(m[2]||0);return h<24&&mi<60?h*60+mi:null};
 const hm=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
 const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
 const words=s=>(String(s||"").match(/\S+/g)||[]).length;
@@ -2108,6 +2108,7 @@ function planEdt(){
     ${aiOK()?`<label class="btn soft" style="align-self:flex-start">Choisir un fichier<input type="file" id="edt-file" accept=".pdf,image/*,.txt" hidden></label>
     <textarea id="edt-text" rows="3" placeholder="…ou colle le texte ici (ex. Lundi 14h-16h Sémiologie digestive, amphi B)"></textarea><button class="btn ghost small" data-act="edttext" style="align-self:flex-start">Lire ce texte</button>`:noAI}
     ${e?.busy?`<div class="row"><span class="spin"></span><span class="help">${esc(e.msg||"Lecture…")}</span></div>`:""}
+    ${e&&!e.busy&&e.msg?`<div class="callout">⚠️ ${esc(e.msg)}<br><span class="help">Tu peux réessayer dans une minute, ou ajouter tes cours à la main juste en dessous.</span></div>`:""}
     ${e?.rows?`<div class="stack" style="gap:6px"><strong>${e.rows.length} créneau(x) trouvé(s)</strong>${e.rows.map((r,i)=>`<label class="step"><input type="checkbox" data-act="edtrow" data-i="${i}" ${r.keep!==false?"checked":""}><span>${WD[r.day]||"?"} ${esc(r.start)}–${esc(r.end)} · <strong>${esc(r.title)}</strong>${r.type?" · "+esc(r.type):""}${r.lieu?" · "+esc(r.lieu):""}</span></label>`).join("")}
       <div class="row"><button class="btn" data-act="edtsave" data-mode="replace">Remplacer mon emploi du temps</button><button class="btn ghost" data-act="edtsave" data-mode="add">Ajouter</button></div></div>`:""}</div>
   <div class="section"><h2>Mes cours de la semaine · ${(P.edt||[]).length}</h2>
@@ -2186,6 +2187,8 @@ function applyOps(ops){
   return n;
 }
 /* import de l'emploi du temps */
+const edtArr=o=>{if(Array.isArray(o))return o;if(o&&typeof o==="object"){for(const k of ["creneaux","créneaux","rows","slots","cours","emploi_du_temps","edt","items","data"])if(Array.isArray(o[k]))return o[k];const a=Object.values(o).find(Array.isArray);if(a)return a}return []};
+const edtDay=d=>{if(+d>=1&&+d<=7)return +d;const n=normLine(String(d||"")).slice(0,3);return {lun:1,mon:1,mar:2,tue:2,mer:3,wed:3,jeu:4,thu:4,ven:5,fri:5,sam:6,sat:6,dim:7,sun:7}[n]||0};
 async function edtImport(files,text){
   X.edt={busy:true,msg:"Lecture de l'emploi du temps…"};render();
   try{
@@ -2197,9 +2200,10 @@ async function edtImport(files,text){
           images.push(await renderPage(pg,1800,.85))}}
       else txt+="\n"+await f.text()}
     if(images.length&&!SLIM?.images)images=[];
-    const rows=await askJSON(`Voici l'emploi du temps universitaire d'une étudiante en L3 de médecine${images.length?" (image(s) jointe(s))":""}. Extrais TOUS les créneaux hebdomadaires : jour (1=lundi … 7=dimanche), heure de début et de fin (HH:MM), intitulé exact du cours, type (CM, TD, TP, stage…) et lieu s'ils figurent. N'invente aucun créneau ; si une case est illisible, ignore-la.\nRéponds uniquement avec un tableau JSON [{"day":1,"start":"08:00","end":"10:00","title":"…","type":"","lieu":""}].${txt.trim()?"\n\nTEXTE :\n"+txt.slice(0,30000):""}`,images.length?{images:images.slice(0,SLIM.images.maxCount||4)}:{});
-    X.edt={rows:(Array.isArray(rows)?rows:[]).map(r=>({day:+r.day,start:validT(r.start),end:validT(r.end),title:String(r.title||""),type:String(r.type||""),lieu:String(r.lieu||"")})).filter(r=>r.day>=1&&r.day<=7&&r.start&&r.end&&r.title)};
-    if(!X.edt.rows.length)X.edt.msg="Aucun créneau lisible";
+    const rows=await askJSON(`Voici l'emploi du temps universitaire d'un(e) étudiant(e)${images.length?" (image(s) jointe(s))":""}. Extrais TOUS les créneaux hebdomadaires : jour (1=lundi … 7=dimanche), heure de début et de fin (HH:MM), intitulé exact du cours, type (CM, TD, TP, stage…) et lieu s'ils figurent. N'invente aucun créneau ; si une case est illisible, ignore-la.\nRéponds uniquement avec un tableau JSON [{"day":1,"start":"08:00","end":"10:00","title":"…","type":"","lieu":""}].${txt.trim()?"\n\nTEXTE :\n"+txt.slice(0,30000):""}`,images.length?{images:images.slice(0,SLIM.images.maxCount||4)}:{});
+    const arr=edtArr(rows);
+    X.edt={rows:arr.map(r=>({day:edtDay(r.day??r.jour),start:validT(r.start??r.debut),end:validT(r.end??r.fin),title:String(r.title||r.intitule||r.cours||""),type:String(r.type||""),lieu:String(r.lieu||r.salle||"")})).filter(r=>r.day>=1&&r.day<=7&&r.start&&r.end&&r.title)};
+    if(!X.edt.rows.length)X.edt.msg="Aucun créneau lisible n'a été trouvé. Essaie une photo plus nette, une capture d'écran, ou colle le texte de l'emploi du temps.";
   }catch(e){X.edt={msg:aiErr(e)};toast(aiErr(e))}
   render();
 }
